@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayStation Home Game Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #60a5fa;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 50px rgba(59, 130, 246, 0.1);
+        }
+        .upload-button {
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .upload-button:hover {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+            transform: translateY(-2px);
+        }
+        .saved-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .delete-button {
+            transition: all 0.2s ease;
+        }
+        .delete-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+
+    <!-- Header -->
+    <header class="bg-slate-800 p-4 border-b border-blue-500/50 shadow-lg sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold text-blue-400 tracking-wider">
+                <span class="text-white">Benxix</span> <span class="font-light">Home</span>
+            </h1>
+            <button onclick="showUploadModal(true)" id="uploadButton"
+                    class="upload-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition duration-200 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L6.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Upload New Game</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6 flex-grow w-full">
+        
+        <!-- User ID Display -->
+        <div id="userIdDisplay" class="mb-4 p-3 bg-slate-800 rounded-lg text-sm text-slate-400 flex flex-wrap items-center">
+            <span class="font-medium text-blue-400 mr-2">Your User ID:</span>
+            <span id="currentUserId">Loading...</span>
+        </div>
+
+        <!-- Pinned Games Section -->
+        <div id="pinnedGamesSection" class="mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-purple-400 border-b border-purple-500/50 pb-2">Pinned Games</h2>
+            <div id="pinnedGamesGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
+                <!-- Pinned game cards will be injected here -->
+            </div>
+        </div>
+
+        <!-- Last Played Section -->
+        <div id="lastPlayedSection" class="mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400 border-b border-yellow-500/50 pb-2">Last Played</h2>
+            <div class="max-w-sm">
+                <div id="lastPlayedCard">
+                    <!-- Last played game card will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- My Saved Games Section -->
+        <div id="savedGamesSection" class="mb-8 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-green-400 border-b border-green-500/50 pb-2">My Saved Games</h2>
+            <div id="savedGamesGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
+                <!-- Saved game cards will be injected here -->
+            </div>
+        </div>
+
+        <!-- Search and Sort Controls -->
+        <div class="mb-6 flex flex-col sm:flex-row gap-4">
+            <div class="flex-grow">
+                <input type="text" id="searchInput" placeholder="Search games by name..."
+                       class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150 text-white placeholder-slate-400">
+            </div>
+            <select id="sortSelect" class="p-3 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150 text-white min-w-[12rem]">
+                <option value="newest">Newest - Oldest</option>
+                <option value="oldest">Oldest - Newest</option>
+                <option value="az">A - Z</option>
+                <option value="za">Z - A</option>
+            </select>
+        </div>
+
+        <!-- All Games Section -->
+        <h2 class="text-2xl font-bold mb-6 text-white border-b border-slate-700 pb-2">Global Game Library</h2>
+        <div id="gamesGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <p id="loadingMessage" class="col-span-full text-center text-slate-500 mt-10">Loading games from the digital void...</p>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="p-4 bg-slate-800 text-center text-slate-500 text-sm mt-8">
+        A Digital Home Experience powered by Firestore.
+    </footer>
+
+    <!-- Upload Game Modal -->
+    <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-lg card-shadow">
+            <h3 class="text-xl font-bold mb-4 text-blue-400 border-b border-slate-700 pb-2">Submit Your Game</h3>
+            
+            <form id="uploadForm" onsubmit="event.preventDefault(); submitGame();">
+                
+                <div class="mb-4">
+                    <label for="gameName" class="block text-sm font-medium text-slate-300 mb-1">Game Title</label>
+                    <input type="text" id="gameName" required maxlength="50"
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="coverImageFile" class="block text-sm font-medium text-slate-300 mb-1">Cover Image File (Max 700KB)</label>
+                    <input type="file" id="coverImageFile" accept="image/*" required
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                    <p class="text-xs text-slate-400 mt-1">Image will be embedded directly as data URL. Max: 700KB.</p>
+                    <p class="text-xs text-red-400 mt-1">Warning: Large images may approach Firestore's 1MB document limit.</p>
+                    <p id="uploadError" class="text-xs text-red-400 mt-1 hidden"></p>
+                </div>
+
+                <!-- Launch Type Selector -->
+                <div class="mb-4 bg-slate-700 p-4 rounded-lg">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Game Launch Method</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center text-white">
+                            <input type="radio" name="launchType" value="html" checked onchange="toggleLaunchFields('html')" class="mr-2 text-blue-500">
+                            Internal HTML Code
+                        </label>
+                        <label class="flex items-center text-white">
+                            <input type="radio" name="launchType" value="url" onchange="toggleLaunchFields('url')" class="mr-2 text-blue-500">
+                            External URL
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Conditional URL Input -->
+                <div class="mb-4 hidden" id="launchUrlGroup">
+                    <label for="launchUrl" class="block text-sm font-medium text-slate-300 mb-1">External Launch URL</label>
+                    <input type="url" id="launchUrl" placeholder="https://example.com/game"
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150">
+                    <p class="text-xs text-slate-400 mt-1">Must be a full, valid URL starting with http:// or https://</p>
+                </div>
+
+                <!-- Conditional HTML Code Input (Default) -->
+                <div class="mb-4" id="htmlCodeGroup">
+                    <label for="htmlCode" class="block text-sm font-medium text-slate-300 mb-1">Game HTML Code (The full runnable code)</label>
+                    <textarea id="htmlCode" rows="10" required
+                              placeholder="Paste your complete HTML/CSS/JS game code here. Make sure it's self-contained!"
+                              class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-500 focus:ring-blue-500 transition duration-150 font-mono text-xs"></textarea>
+                    <p class="text-xs text-red-400 mt-1">Warning: Submitted code runs in a sandboxed iframe. Do not submit malicious code.</p>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="showUploadModal(false)"
+                            class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitGameButton"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center space-x-2">
+                        <span id="submitText">Share to Home</span>
+                        <div id="submitSpinner" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-blue-400 rounded-full"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Game Player Modal -->
+    <div id="playerModal" class="fixed inset-0 bg-black bg-opacity-95 hidden items-center justify-center p-2 z-50 transition-opacity duration-300">
+        <div class="bg-slate-900 p-2 rounded-xl w-full h-full max-w-7xl max-h-[95vh] flex flex-col card-shadow">
+            
+            <div class="flex justify-between items-center p-2 border-b border-blue-500/50">
+                <h3 id="playerGameTitle" class="text-lg font-bold text-blue-400">Playing Game...</h3>
+                <div class="flex space-x-2">
+                    <button id="fullscreenButton" onclick="toggleFullscreen()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-150">
+                        Fullscreen
+                    </button>
+                    <button onclick="hidePlayerModal()"
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-150">
+                        Close
+                    </button>
+                </div>
+            </div>
+            
+            <iframe id="gamePlayerFrame"
+                    class="w-full flex-grow mt-2 rounded-lg bg-white"
+                    frameborder="0"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock"
+                    title="User Uploaded Game">
+            </iframe>
+
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (for Deletion) -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-sm card-shadow">
+            <h3 class="text-xl font-bold mb-4 text-red-400 border-b border-slate-700 pb-2">Confirm Deletion</h3>
+            <p id="confirmMessage" class="text-slate-300 mb-6">Are you sure you want to delete this game?</p>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="window.confirmAction(false)"
+                        class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                    Cancel
+                </button>
+                <button type="button" onclick="window.confirmAction(true)"
+                        class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center space-x-2 delete-button">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Import deleteDoc here
+        import { getFirestore, collection, addDoc, onSnapshot, query, getDoc, setDoc, doc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: In a real environment, __firebase_config should be used.
+        // For demonstration purposes with the provided snippet, we stick to the hardcoded config.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBWf6HBPG9PSdMFSK3QCH3HniT_8CJ3WKo",
+            authDomain: "playstation-272c0.firebaseapp.com",
+            projectId: "playstation-272c0",
+            storageBucket: "playstation-272c0.firebasestorage.app",
+            messagingSenderId: "1011461792326",
+            appId: "1:1011461792326:web:2f57279ee1bed9fad0a047"
+        };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db;
+        let auth;
+        let currentUserId = 'anonymous';
+        let isAuthorizedUploader = false; // New variable to track authorization status
+        let uploadedImageUrl = null;
+        let allGames = [];
+        let currentSearchTerm = '';
+        let currentSortOrder = 'newest';
+        let userProgress = {}; // Store user's game progress locally
+        let pendingDeletionGameId = null; // State for confirmation modal
+
+        // UI Element References
+        const gamesGrid = document.getElementById('gamesGrid');
+        const savedGamesGrid = document.getElementById('savedGamesGrid');
+        const savedGamesSection = document.getElementById('savedGamesSection');
+        const uploadModal = document.getElementById('uploadModal');
+        const playerModal = document.getElementById('playerModal');
+        const gamePlayerFrame = document.getElementById('gamePlayerFrame');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitGameButton = document.getElementById('submitGameButton');
+        const submitText = document.getElementById('submitText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const coverImageFileInput = document.getElementById('coverImageFile');
+        const uploadError = document.getElementById('uploadError');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const launchUrlGroup = document.getElementById('launchUrlGroup');
+        const htmlCodeGroup = document.getElementById('htmlCodeGroup');
+        const htmlCodeInput = document.getElementById('htmlCode');
+        const launchUrlInput = document.getElementById('launchUrl');
+
+
+        // Firestore Paths (Updated to use user-specific paths for progress and lastPlayed)
+        const GAMES_COLLECTION_PATH = `/artifacts/${appId}/public/data/games`;
+        const getProgressCollectionPath = (userId) => `/artifacts/${appId}/users/${userId}/gameProgress`;
+        const getLastPlayedCollectionPath = (userId) => `/artifacts/${appId}/users/${userId}/lastPlayed`;
+        // IMPORTANT: This ID must be set to the user ID of the authorized moderator/uploader.
+        // The current hardcoded ID is kept from the original file for consistency.
+        const AUTHORIZED_UPLOADER_ID = "T2tTfVmsQidTCt6JfMxTNS3qxL73"; 
+
+        // Firebase Initialization
+        window.initFirebase = async () => {
+            if (!firebaseConfig || !firebaseConfig.projectId) {
+                console.error("Firebase configuration is missing or invalid. Cannot initialize Firestore.");
+                loadingMessage.textContent = "Error: Database configuration missing or invalid. Cannot load games.";
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig); 
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Sign-in with custom token successful.");
+                    } catch (e) {
+                        console.warn(`Custom token sign-in failed (${e.code || e.message}). Falling back to anonymous sign-in.`);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        isAuthorizedUploader = currentUserId === AUTHORIZED_UPLOADER_ID;
+                        document.getElementById('currentUserId').textContent = currentUserId;
+                        console.log("User authenticated:", currentUserId);
+                        
+                        // Show/hide upload button based on authorization
+                        const uploadButton = document.getElementById('uploadButton');
+                        if (isAuthorizedUploader) {
+                            uploadButton.style.display = 'flex';
+                        } else {
+                            uploadButton.style.display = 'none';
+                        }
+                        
+                        loadGames();
+                        loadUserProgress();
+                        loadLastPlayed();
+                    } else {
+                        currentUserId = 'anonymous';
+                        isAuthorizedUploader = false;
+                        document.getElementById('currentUserId').textContent = 'Signed out/Anonymous';
+                        document.getElementById('uploadButton').style.display = 'none';
+                        // If signed out, clear the data and hide sections
+                        allGames = [];
+                        userProgress = {};
+                        renderGames([]);
+                        savedGamesSection.classList.add('hidden');
+                        document.getElementById('lastPlayedSection').classList.add('hidden');
+                        console.log("User signed out.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                loadingMessage.textContent = "Error: Failed to initialize database or authenticate.";
+            }
+        };
+
+        // Firestore Operations
+        
+        /**
+         * Toggles the 'isPinned' status for a game. Only for AUTHORIZED_UPLOADER_ID.
+         * @param {string} gameId The ID of the game document.
+         * @param {boolean} currentPinnedStatus The current pinned status.
+         */
+        window.togglePinGame = async (gameId, currentPinnedStatus) => {
+            if (!isAuthorizedUploader) {
+                alertMessage("Permission Denied: Only the authorized moderator can pin games.", "red");
+                return;
+            }
+
+            try {
+                const gameRef = doc(db, GAMES_COLLECTION_PATH, gameId);
+                const newPinnedStatus = !currentPinnedStatus;
+                await setDoc(gameRef, { isPinned: newPinnedStatus }, { merge: true });
+
+                alertMessage(`Game ID ${gameId.substring(0, 8)}... has been ${newPinnedStatus ? 'PINNED' : 'UNPINNED'}.`, "purple");
+
+            } catch (error) {
+                console.error("Error toggling pin status: ", error);
+                alertMessage("Failed to toggle pin status. Check console for details.", "red");
+            }
+        };
+
+        /**
+         * Deletes a game document from Firestore.
+         * This function should only be callable by the AUTHORIZED_UPLOADER_ID.
+         * @param {string} gameId The ID of the game document to delete.
+         */
+        window.deleteGame = async (gameId, gameName) => {
+            if (!isAuthorizedUploader) {
+                alertMessage("Permission Denied: Only the authorized moderator can delete games.", "red");
+                return;
+            }
+
+            // Set state for confirmation modal
+            pendingDeletionGameId = gameId;
+            confirmMessage.textContent = `Are you sure you want to permanently delete the game: "${gameName}"? This action cannot be undone.`;
+            confirmModal.style.display = 'flex';
+        };
+
+        /**
+         * Handles the confirmation from the modal.
+         * @param {boolean} confirmed True if the user confirmed the deletion.
+         */
+        window.confirmAction = async (confirmed) => {
+            confirmModal.style.display = 'none';
+            if (!confirmed || !pendingDeletionGameId) {
+                pendingDeletionGameId = null;
+                return;
+            }
+
+            const gameId = pendingDeletionGameId;
+            pendingDeletionGameId = null;
+
+            try {
+                const gameRef = doc(db, GAMES_COLLECTION_PATH, gameId);
+                await deleteDoc(gameRef);
+
+                // Optional: Delete related progress docs, though they don't block deletion.
+                // In a production app, you would batch delete these. For simplicity, we skip this here.
+
+                alertMessage(`Game ID ${gameId.substring(0, 8)}... has been deleted.`, "green");
+            } catch (error) {
+                console.error("Error deleting document: ", error);
+                alertMessage("Failed to delete game. Check console for details.", "red");
+            }
+        };
+
+        window.loadGames = () => {
+            if (!db) return;
+            
+            const q = query(collection(db, GAMES_COLLECTION_PATH));
+            onSnapshot(q, (snapshot) => {
+                allGames = [];
+                snapshot.forEach((doc) => {
+                    allGames.push({ id: doc.id, ...doc.data() });
+                });
+                renderGames(getFilteredAndSortedGames());
+                renderSavedGames();
+                renderLastPlayed(); 
+            }, (error) => {
+                console.error("Error listening to games:", error);
+                loadingMessage.textContent = "Error fetching games. Permission denied.";
+            });
+        };
+
+        // Load user's game progress (Updated to use user-specific path)
+        window.loadUserProgress = () => {
+            if (!db || currentUserId === 'anonymous') return;
+
+            // Target the user's private collection for game progress
+            const progressQuery = query(collection(db, getProgressCollectionPath(currentUserId)));
+            
+            // Use onSnapshot for real-time updates
+            onSnapshot(progressQuery, (snapshot) => {
+                userProgress = {};
+                snapshot.forEach((doc) => {
+                    // Document ID is of the format 'gameId'
+                    userProgress[doc.id] = doc.data(); 
+                });
+                renderSavedGames();
+            }, (error) => {
+                console.error("Error loading user progress:", error);
+            });
+        };
+
+        // Save last played game (Updated to use user-specific path)
+        window.saveLastPlayed = async (gameId) => {
+            if (!db || currentUserId === 'anonymous') return;
+
+            try {
+                // Use a static doc ID 'lastPlayedDoc' within the user's private collection
+                const lastPlayedRef = doc(db, getLastPlayedCollectionPath(currentUserId), 'lastPlayedDoc');
+                const game = allGames.find(g => g.id === gameId);
+                if (!game) return;
+
+                await setDoc(lastPlayedRef, {
+                    gameId: gameId,
+                    gameName: game.name,
+                    coverUrl: game.coverUrl,
+                    lastPlayed: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error saving last played:", error);
+            }
+        };
+
+        // Load last played game (Updated to use user-specific path)
+        window.loadLastPlayed = () => {
+            if (!db || currentUserId === 'anonymous') return;
+
+            // Use a static doc ID 'lastPlayedDoc' within the user's private collection
+            const lastPlayedRef = doc(db, getLastPlayedCollectionPath(currentUserId), 'lastPlayedDoc');
+            
+            // Use onSnapshot to update in real-time if another tab/device plays
+            onSnapshot(lastPlayedRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    renderLastPlayed(docSnap.data());
+                } else {
+                    document.getElementById('lastPlayedSection').classList.add('hidden');
+                }
+            }, (error) => {
+                console.error("Error loading last played:", error);
+                document.getElementById('lastPlayedSection').classList.add('hidden');
+            });
+        };
+
+        // Save game progress (Updated to use user-specific path)
+        window.saveGameProgress = async (gameId, progressData) => {
+            if (!db || currentUserId === 'anonymous') {
+                alertMessage("You must be signed in to save progress!", "red");
+                return false;
+            }
+
+            try {
+                // Document ID is the gameId, inside the user's private progress collection
+                const progressRef = doc(db, getProgressCollectionPath(currentUserId), gameId);
+                const progressDoc = {
+                    data: progressData,
+                    lastSaved: serverTimestamp(),
+                    gameName: allGames.find(g => g.id === gameId)?.name || 'Unknown Game'
+                };
+                
+                await setDoc(progressRef, progressDoc, { merge: true });
+                alertMessage("Game progress saved!", "green");
+                return true;
+            } catch (error) {
+                console.error("Error saving progress:", error);
+                alertMessage("Failed to save progress.", "red");
+                return false;
+            }
+        };
+
+        // Load game progress (Updated to use user-specific path)
+        window.loadGameProgress = async (gameId) => {
+            if (!db || currentUserId === 'anonymous') return null;
+
+            try {
+                const progressRef = doc(db, getProgressCollectionPath(currentUserId), gameId);
+                const docSnap = await getDoc(progressRef);
+                
+                if (docSnap.exists()) {
+                    return docSnap.data().data || null;
+                }
+                return null;
+            } catch (error) {
+                console.error("Error loading progress:", error);
+                return null;
+            }
+        };
+
+        window.submitGame = async () => {
+            if (!db || !currentUserId) return;
+
+            if (!isAuthorizedUploader) {
+                alertMessage("Permission Denied: Only the designated admin ID (" + AUTHORIZED_UPLOADER_ID + ") can upload games.", "red");
+                showUploadModal(false);
+                return;
+            }
+
+            const name = document.getElementById('gameName').value.trim();
+            const launchType = document.querySelector('input[name="launchType"]:checked').value;
+            let htmlCode = null;
+            let launchUrl = null;
+
+            if (launchType === 'html') {
+                htmlCode = htmlCodeInput.value.trim();
+                if (!htmlCode) {
+                    alertMessage("HTML Code is required for internal launch.", "red");
+                    return;
+                }
+            } else if (launchType === 'url') {
+                launchUrl = launchUrlInput.value.trim();
+                if (!launchUrl || !(launchUrl.startsWith('http://') || launchUrl.startsWith('https://'))) {
+                    alertMessage("A valid URL starting with http:// or https:// is required for external launch.", "red");
+                    return;
+                }
+            }
+
+            if (!name || !uploadedImageUrl) {
+                alertMessage("Please fill in all required fields and upload an image.", "red");
+                return;
+            }
+
+            submitGameButton.disabled = true;
+            submitText.textContent = 'Sharing...';
+            submitSpinner.classList.remove('hidden');
+
+            const gameData = {
+                name: name,
+                coverUrl: uploadedImageUrl,
+                htmlCode: htmlCode, // null if launchType is 'url'
+                launchType: launchType,
+                launchUrl: launchUrl, // null if launchType is 'html'
+                userId: currentUserId,
+                timestamp: Date.now(),
+                isPinned: false // Default to unpinned
+            };
+
+            const docSize = JSON.stringify(gameData).length;
+            const maxSize = 1000 * 1024; // 1MB Firestore limit
+            if (docSize > maxSize) {
+                alertMessage(`Document too large: ${(docSize / 1024).toFixed(2)}KB. Maximum: 1MB. Try reducing image/HTML size.`, "red");
+                submitGameButton.disabled = false;
+                submitText.textContent = 'Share to Home';
+                submitSpinner.classList.add('hidden');
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, GAMES_COLLECTION_PATH), gameData);
+                console.log("Game successfully added:", name);
+                
+                uploadForm.reset();
+                uploadedImageUrl = null;
+                coverImageFileInput.value = '';
+                showUploadModal(false);
+                // Reset launch fields visually
+                toggleLaunchFields('html'); 
+                alertMessage(`'${name}' has been successfully shared to Home!`, "green");
+
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alertMessage("Failed to upload game. Error: " + e.message, "red");
+            } finally {
+                submitGameButton.disabled = false;
+                submitText.textContent = 'Share to Home';
+                submitSpinner.classList.add('hidden');
+            }
+        };
+
+        // UI Rendering
+        const createGameCard = (game, hasProgress = false, showControls = false) => {
+            const card = document.createElement('div');
+            card.className = 'bg-slate-800 rounded-xl overflow-hidden shadow-xl hover:shadow-blue-500/50 transition duration-300 transform hover:scale-[1.02] cursor-pointer card-shadow relative';
+            
+            // Check if game has a URL property to determine launch type
+            const isExternalLaunch = game.launchType === 'url' && game.launchUrl;
+            
+            const buttonText = isExternalLaunch ? 'Launch External' : (hasProgress ? 'Continue' : 'Launch Game');
+
+            // Progress Badge (Top Left)
+            const progressBadge = hasProgress ? 
+                '<div class="absolute top-2 left-2 saved-badge text-white text-xs font-bold px-2 py-1 rounded-full z-10">Saved</div>' : '';
+            
+            // Admin Controls (Pin/Unpin and Delete, only if authorized)
+            let adminControls = '';
+            if (showControls) {
+                const isPinned = game.isPinned || false;
+                // Pin Button (Top Right)
+                const pinButton = `
+                    <button onclick="event.stopPropagation(); togglePinGame('${game.id}', ${isPinned});"
+                            class="bg-purple-700/80 hover:bg-purple-600 text-white p-1 rounded-full text-sm font-medium transition duration-150"
+                            title="${isPinned ? 'Unpin Game' : 'Pin to Top'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${isPinned ? 'text-yellow-400 fill-current' : 'text-white'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M15 3l-3-3l-3 3"/><path d="M12 22v-6"/><path d="M15 21l-3 3l-3-3"/><path d="M22 12h-6"/><path d="M21 15l3-3l-3-3"/><path d="M2 12h6"/><path d="M3 15l-3-3l3-3"/></svg>
+                    </button>
+                `;
+                
+                // Delete Button (Bottom Left, still using original location)
+                const deleteButton = `
+                    <button onclick="event.stopPropagation(); deleteGame('${game.id}', '${game.name}');"
+                            class="bg-red-700/80 hover:bg-red-600 delete-button text-white p-1 rounded-full text-sm font-medium transition duration-150"
+                            title="Delete Game">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                adminControls = `
+                    <div class="absolute top-2 right-2 flex space-x-1 z-10">
+                        ${pinButton}
+                    </div>
+                    <div class="absolute bottom-2 left-2 z-10">
+                         ${deleteButton}
+                    </div>
+                `;
+            }
+
+            card.onclick = () => playGame(game);
+            
+            card.innerHTML = `
+                <div class="h-40 overflow-hidden relative">
+                    ${progressBadge}
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+                    <img src="${game.coverUrl}" 
+                         alt="Cover for ${game.name}" 
+                         class="w-full h-full object-cover transition duration-300 ease-in-out"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x300/3b82f6/ffffff?text=NO+COVER+IMAGE';" />
+                </div>
+                ${adminControls}
+                <div class="p-4">
+                    <h3 class="text-white text-lg font-semibold truncate">${game.name}</h3>
+                    <p class="text-slate-400 text-xs mt-1 flex items-center space-x-1">
+                        <span>Shared by: <span class="text-blue-300 font-mono">${game.userId.substring(0, 8)}...</span></span>
+                        ${isExternalLaunch ? '<span class="text-xs font-bold text-yellow-300 ml-2">(External)</span>' : ''}
+                    </p>
+                    <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-lg text-sm font-medium transition duration-150">
+                        ${buttonText}
+                    </button>
+                </div>
+            `;
+            return card;
+        };
+        
+        const renderPinnedGames = () => {
+            const pinnedGamesGrid = document.getElementById('pinnedGamesGrid');
+            const pinnedGamesSection = document.getElementById('pinnedGamesSection');
+            
+            // Filter pinned games and sort them by newest first
+            const pinnedGames = allGames
+                .filter(game => game.isPinned)
+                .sort((a, b) => b.timestamp - a.timestamp); 
+
+            if (pinnedGames.length === 0) {
+                pinnedGamesSection.classList.add('hidden');
+                return;
+            }
+
+            pinnedGamesSection.classList.remove('hidden');
+            pinnedGamesGrid.innerHTML = '';
+            
+            const showControls = isAuthorizedUploader;
+            
+            pinnedGames.forEach(game => {
+                const hasProgress = userProgress.hasOwnProperty(game.id);
+                pinnedGamesGrid.appendChild(createGameCard(game, hasProgress, showControls));
+            });
+        };
+
+
+        const renderGames = (games) => {
+            renderPinnedGames(); // Render pinned games first
+            
+            // Filter out pinned games from the main grid
+            const unpinnedGames = games.filter(game => !game.isPinned);
+
+            gamesGrid.innerHTML = '';
+            loadingMessage.style.display = 'none';
+            
+            // Determine if the delete/pin button should be shown
+            const showControls = isAuthorizedUploader;
+
+            if (unpinnedGames.length === 0) {
+                const message = currentSearchTerm ? 
+                    `No games found matching "${currentSearchTerm}".` : 
+                    'No unpinned games available.';
+                gamesGrid.innerHTML = `<p class="col-span-full text-center text-slate-500 mt-10">${message}</p>`;
+                return;
+            }
+
+            unpinnedGames.forEach(game => {
+                const hasProgress = userProgress.hasOwnProperty(game.id);
+                gamesGrid.appendChild(createGameCard(game, hasProgress, showControls));
+            });
+        };
+
+        const renderSavedGames = () => {
+            const savedGames = allGames.filter(game => userProgress.hasOwnProperty(game.id));
+            
+            if (savedGames.length === 0) {
+                savedGamesSection.classList.add('hidden');
+                return;
+            }
+
+            savedGamesSection.classList.remove('hidden');
+            savedGamesGrid.innerHTML = '';
+            
+            const showControls = isAuthorizedUploader;
+            
+            savedGames.forEach(game => {
+                savedGamesGrid.appendChild(createGameCard(game, true, showControls));
+            });
+        };
+
+        const renderLastPlayed = (lastPlayedData) => {
+            const lastPlayedSection = document.getElementById('lastPlayedSection');
+            const lastPlayedCard = document.getElementById('lastPlayedCard');
+            
+            if (!lastPlayedData || !lastPlayedData.gameId) {
+                lastPlayedSection.classList.add('hidden');
+                return;
+            }
+            
+            const game = allGames.find(g => g.id === lastPlayedData.gameId);
+            if (!game) {
+                lastPlayedSection.classList.add('hidden');
+                return;
+            }
+            
+            const showControls = isAuthorizedUploader;
+            
+            lastPlayedSection.classList.remove('hidden');
+            lastPlayedCard.innerHTML = '';
+            const hasProgress = userProgress.hasOwnProperty(game.id);
+            lastPlayedCard.appendChild(createGameCard(game, hasProgress, showControls));
+        };
+
+        // Search and Sort Functions
+        window.handleSearch = (event) => {
+            currentSearchTerm = event.target.value.toLowerCase();
+            renderGames(getFilteredAndSortedGames());
+        };
+
+        window.handleSort = (event) => {
+            currentSortOrder = event.target.value;
+            renderGames(getFilteredAndSortedGames());
+        };
+
+        window.getFilteredAndSortedGames = () => {
+            let filtered = allGames;
+            
+            if (currentSearchTerm) {
+                filtered = allGames.filter(game => 
+                    game.name.toLowerCase().includes(currentSearchTerm)
+                );
+            }
+            
+            switch (currentSortOrder) {
+                case 'newest':
+                    return [...filtered].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                case 'oldest':
+                    return [...filtered].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                case 'az':
+                    return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+                case 'za':
+                    return [...filtered].sort((a, b) => b.name.localeCompare(a.name));
+                default:
+                    return filtered;
+            }
+        };
+        
+        /**
+         * Toggles visibility and required attributes for HTML/URL launch fields.
+         * @param {string} type 'html' or 'url'
+         */
+        window.toggleLaunchFields = (type) => {
+            if (type === 'url') {
+                launchUrlGroup.classList.remove('hidden');
+                htmlCodeGroup.classList.add('hidden');
+                htmlCodeInput.removeAttribute('required');
+                launchUrlInput.setAttribute('required', 'required');
+            } else { // html
+                launchUrlGroup.classList.add('hidden');
+                htmlCodeGroup.classList.remove('hidden');
+                htmlCodeInput.setAttribute('required', 'required');
+                launchUrlInput.removeAttribute('required');
+            }
+        };
+
+        // Modal & Game Player Functions
+        window.showUploadModal = (show) => {
+            if (show) {
+                uploadModal.style.display = 'flex';
+                // Ensure default state is 'html' when opening
+                document.querySelector('input[name="launchType"][value="html"]').checked = true;
+                toggleLaunchFields('html'); 
+            } else {
+                uploadModal.style.display = 'none';
+                uploadedImageUrl = null;
+                if (coverImageFileInput) {
+                    coverImageFileInput.value = '';
+                }
+                if (uploadError) {
+                    uploadError.classList.add('hidden');
+                }
+                uploadForm.reset();
+            }
+        };
+        
+        window.playGame = (game) => {
+            // Check for external launch
+            if (game.launchType === 'url' && game.launchUrl) {
+                // Save last played, then redirect
+                saveLastPlayed(game.id);
+                // Open in a new tab/window
+                window.open(game.launchUrl, '_blank');
+                return;
+            }
+
+            // If internal HTML launch:
+            const gameId = game.id;
+            const title = game.name;
+            const htmlCode = game.htmlCode;
+            
+            // Save last played game
+            saveLastPlayed(gameId);
+            
+            // Inject the GameProgress API into the game's context
+            const enhancedHtmlCode = `
+                <script>
+                  // Game Progress Saving API
+                  const GAME_ID = "${gameId}";
+                  const GAME_TITLE = "${title}";
+                  
+                  // Save progress function
+                  window.saveGameProgress = function(data) {
+                    window.parent.postMessage({ 
+                      type: 'SAVE_PROGRESS', 
+                      gameId: GAME_ID, 
+                      data: data 
+                    }, '*');
+                    return true;
+                  };
+                  
+                  // Load progress function
+                  window.loadGameProgress = function(callback) {
+                    const listener = function(event) {
+                      if (event.data.type === 'LOADED_PROGRESS' && event.data.gameId === GAME_ID) {
+                        window.removeEventListener('message', listener);
+                        callback(event.data.data || null);
+                      }
+                    };
+                    window.addEventListener('message', listener);
+                    window.parent.postMessage({ 
+                      type: 'LOAD_PROGRESS', 
+                      gameId: GAME_ID 
+                    }, '*');
+                  };
+                  
+                  // Notify parent that game is ready
+                  window.parent.postMessage({ 
+                    type: 'GAME_LOADED', 
+                    gameId: GAME_ID 
+                  }, '*');
+                  
+                  // Auto-save on page unload
+                  window.addEventListener('beforeunload', () => {
+                    if (window.onAutoSave) {
+                      window.onAutoSave();
+                    }
+                  });
+                <\/script>
+                ${htmlCode}
+                <script>
+                  // Log that API is ready
+                  console.log('Game Progress API ready. Use saveGameProgress(data) and loadGameProgress(callback)');
+                <\/script>
+            `;
+            
+            document.getElementById('playerGameTitle').textContent = `Playing: ${title}`;
+            gamePlayerFrame.srcdoc = enhancedHtmlCode;
+            playerModal.style.display = 'flex';
+        };
+
+        window.hidePlayerModal = () => {
+            gamePlayerFrame.srcdoc = '<html><body style="background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100%;">Game closed. Press close to exit.</body></html>';
+            playerModal.style.display = 'none';
+        };
+
+        window.toggleFullscreen = () => {
+            const iframe = document.getElementById('gamePlayerFrame');
+            
+            if (!document.fullscreenElement) {
+                iframe.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                    alertMessage('Fullscreen not supported or failed to enter fullscreen.', 'red');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            const button = document.getElementById('fullscreenButton');
+            if (document.fullscreenElement) {
+                button.textContent = 'Exit Fullscreen';
+                button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                button.classList.add('bg-orange-600', 'hover:bg-orange-700');
+            } else {
+                button.textContent = 'Fullscreen';
+                button.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                button.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+        });
+
+        // Listen for messages from the game iframe
+        window.addEventListener('message', async (event) => {
+            // Accept messages from same origin or sandboxed iframes (origin 'null')
+            if (event.origin !== window.location.origin && event.origin !== 'null') {
+                return;
+            }
+
+            const { type, gameId, data, gameName } = event.data;
+            
+            if (type === 'SAVE_PROGRESS') {
+                await saveGameProgress(gameId, data);
+            } else if (type === 'LOAD_PROGRESS') {
+                const progress = await loadGameProgress(gameId);
+                // Send progress back to the specific iframe
+                gamePlayerFrame.contentWindow.postMessage({ 
+                  type: 'LOADED_PROGRESS', 
+                  gameId: gameId, 
+                  data: progress 
+                }, '*');
+            } else if (type === 'GAME_LOADED') {
+                console.log(`Game ${gameId} loaded and ready`);
+            }
+        });
+
+        // Image Upload Handler (Converts to Data URL)
+        window.handleImageUpload = async (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                uploadedImageUrl = null;
+                uploadError.classList.add('hidden');
+                return;
+            }
+
+            // Validate file size and type
+            if (file.size > 716800) {
+                uploadError.textContent = `File too large: ${(file.size / 1024).toFixed(2)}KB. Maximum: 700KB.`;
+                uploadError.classList.remove('hidden');
+                uploadedImageUrl = null;
+                coverImageFileInput.value = '';
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                uploadError.textContent = 'Invalid file type. Please select an image file.';
+                uploadError.classList.remove('hidden');
+                uploadedImageUrl = null;
+                coverImageFileInput.value = '';
+                return;
+            }
+
+            uploadError.classList.add('hidden');
+            
+            // Show processing state
+            submitGameButton.disabled = true;
+            submitText.textContent = 'Processing Image...';
+            submitSpinner.classList.remove('hidden');
+
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                uploadedImageUrl = e.target.result; // Data URL
+                alertMessage('Image processed successfully!', 'green');
+                submitGameButton.disabled = false;
+                submitText.textContent = 'Share to Home';
+                submitSpinner.classList.add('hidden');
+            };
+            
+            reader.onerror = () => {
+                console.error('Error reading image file:', reader.error);
+                uploadError.textContent = 'Failed to process image. Please try again.';
+                uploadError.classList.remove('hidden');
+                uploadedImageUrl = null;
+                coverImageFileInput.value = '';
+                submitGameButton.disabled = false;
+                submitText.textContent = 'Share to Home';
+                submitSpinner.classList.add('hidden');
+            };
+            
+            reader.readAsDataURL(file);
+        };
+
+        // Event Listeners
+        coverImageFileInput.addEventListener('change', handleImageUpload);
+        searchInput.addEventListener('input', handleSearch);
+        sortSelect.addEventListener('change', handleSort);
+
+        // Custom Alert Box
+        function alertMessage(message, type) {
+            const colorMap = {
+                'red': 'bg-red-500',
+                'green': 'bg-green-500',
+                'purple': 'bg-purple-500',
+                'blue': 'bg-blue-500'
+            };
+            
+            const alertBox = document.createElement('div');
+            alertBox.className = `${colorMap[type]} text-white p-3 rounded-lg shadow-xl fixed top-4 right-4 z-[100] transition-opacity duration-300 opacity-0`;
+            alertBox.textContent = message;
+
+            document.body.appendChild(alertBox);
+            
+            setTimeout(() => alertBox.style.opacity = '1', 10);
+
+            setTimeout(() => {
+                alertBox.style.opacity = '0';
+                setTimeout(() => alertBox.remove(), 300);
+            }, 3000);
+        }
+        
+        // Initialize Application
+        window.onload = initFirebase;
+
+    </script>
+</body>
+</html>
