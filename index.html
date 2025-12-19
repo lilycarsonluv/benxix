@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benxix</title>
+    <title>PlayStation Home Game Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar {
@@ -48,6 +48,45 @@
         .delete-button:hover {
             transform: scale(1.05);
         }
+        /* New button styles */
+        .action-btn {
+            background-color: #334155;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background-color: #475569;
+            transform: translateY(-1px);
+        }
+        /* Admin User List Styles */
+        .user-list-item {
+            border-bottom: 1px solid #334155;
+        }
+        .user-list-item:last-child {
+            border-bottom: none;
+        }
+        /* Announcement Overlay Styles */
+        #announcementOverlay {
+            animation: slideDown 0.5s ease-out;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+            50% { text-shadow: 0 0 40px rgba(255, 255, 255, 1), 0 0 60px rgba(59, 130, 246, 0.8); }
+        }
+        .announcement-text {
+            animation: pulseGlow 2s infinite;
+            line-height: 1.2;
+        }
+        /* Poll Styles */
+        .poll-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        .poll-option:hover {
+            background-color: #475569;
+        }
     </style>
 </head>
 <body class="bg-slate-900">
@@ -55,26 +94,107 @@
     <!-- Header -->
     <header class="bg-slate-800 p-4 border-b border-blue-500/50 shadow-lg sticky top-0 z-10">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-3xl font-extrabold text-blue-400 tracking-wider">
-                <span class="text-white">Benxix</span> <span class="font-light">Home</span>
-            </h1>
-            <button onclick="showUploadModal(true)" id="uploadButton"
-                    class="upload-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition duration-200 hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L6.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-                <span>Upload New Game</span>
-            </button>
+            
+            <!-- Logo and Save Controls Container -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="flex flex-col">
+                    <h1 class="text-3xl font-extrabold text-blue-400 tracking-wider leading-none">
+                        <span class="text-white">Benxix</span> <span class="font-light"></span>
+                    </h1>
+                    <!-- User Count Display -->
+                    <div id="totalUserCount" class="text-xs text-blue-500 font-mono mt-1 font-bold">Users: Loading...</div>
+                </div>
+                
+                <!-- Import/Export Buttons -->
+                <div class="flex items-center space-x-2 sm:ml-6">
+                    <button onclick="document.getElementById('importFileInput').click()" 
+                            class="action-btn text-xs sm:text-sm text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600 flex items-center space-x-1"
+                            title="Import previously exported save file">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>Import Saved Data</span>
+                    </button>
+                    
+                    <button onclick="window.exportSavedData()" 
+                            class="action-btn text-xs sm:text-sm text-slate-200 px-3 py-1.5 rounded-lg border border-slate-600 flex items-center space-x-1"
+                            title="Download a backup of your game saves">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Export Saved Data</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- Admin User Management Button (Hidden by default) -->
+                <button onclick="window.openUserManagement()" id="manageUsersButton"
+                        class="hidden bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg items-center space-x-2 transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Users</span>
+                </button>
+
+                <!-- Announcement Button -->
+                <button onclick="window.openAnnouncementModal()" id="announceButton"
+                        class="hidden bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg items-center space-x-2 transition duration-200 shadow-lg shadow-orange-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Announce</span>
+                </button>
+
+                <!-- NEW: Create Poll Button -->
+                <button onclick="window.openCreatePollModal()" id="createPollButton"
+                        class="hidden bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg items-center space-x-2 transition duration-200 shadow-lg shadow-cyan-500/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                    </svg>
+                    <span>Create Poll</span>
+                </button>
+
+                <button onclick="showUploadModal(true)" id="uploadButton"
+                        class="upload-button bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 transition duration-200 hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L6.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Upload New Game</span>
+                </button>
+            </div>
         </div>
     </header>
+
+    <!-- Hidden Input for File Import -->
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="window.handleImportFile(this)">
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-6 flex-grow w-full">
         
+        <!-- NEW: Poll Section (at the very top) -->
+        <div id="pollSection" class="mb-8 hidden">
+            <div class="bg-gradient-to-r from-cyan-900 to-blue-900 p-6 rounded-xl card-shadow border border-cyan-500/50">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-2xl font-bold text-cyan-400">Community Poll</h2>
+                    <span id="pollStatus" class="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded-full"></span>
+                </div>
+                <h3 id="pollQuestion" class="text-xl font-semibold text-white mb-4"></h3>
+                <div id="pollOptions" class="space-y-3"></div>
+                <div id="pollResults" class="hidden space-y-3"></div>
+                <div id="pollVoteButtonContainer" class="mt-4 flex justify-end">
+                    <button id="pollVoteButton" onclick="submitVote()" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+                        Vote
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- User ID Display -->
         <div id="userIdDisplay" class="mb-4 p-3 bg-slate-800 rounded-lg text-sm text-slate-400 flex flex-wrap items-center">
             <span class="font-medium text-blue-400 mr-2">Your User ID:</span>
             <span id="currentUserId">Loading...</span>
+            <span id="adminBadge" class="hidden ml-2 bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">Admin</span>
         </div>
 
         <!-- Pinned Games Section -->
@@ -128,6 +248,31 @@
     <footer class="p-4 bg-slate-800 text-center text-slate-500 text-sm mt-8">
         A Digital Home Experience powered by Firestore.
     </footer>
+
+    <!-- Admin User Management Modal -->
+    <div id="userManagementModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-2xl h-[80vh] flex flex-col card-shadow">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                <h3 class="text-xl font-bold text-purple-400">Manage Users</h3>
+                <button onclick="document.getElementById('userManagementModal').style.display='none'" class="text-slate-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <input type="text" id="userSearchInput" placeholder="Search by User ID..." oninput="window.filterUserList()"
+                   class="w-full p-2 mb-4 rounded-lg bg-slate-700 border border-slate-600 focus:border-purple-500 focus:ring-purple-500 transition duration-150 text-white">
+            
+            <div id="userListContainer" class="flex-grow overflow-y-auto bg-slate-900 rounded-lg border border-slate-700 p-2 space-y-2">
+                <p class="text-center text-slate-500 mt-4">Loading users...</p>
+            </div>
+            
+            <div class="mt-4 text-xs text-slate-400 text-right">
+                Only authorized uploaders can see this panel.
+            </div>
+        </div>
+    </div>
 
     <!-- Upload Game Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
@@ -198,6 +343,79 @@
         </div>
     </div>
 
+    <!-- Edit Game Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-lg card-shadow max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-yellow-400 border-b border-slate-700 pb-2">Edit Game</h3>
+            
+            <form id="editForm" onsubmit="event.preventDefault(); updateGame();">
+                <input type="hidden" id="editGameId">
+                
+                <div class="mb-4">
+                    <label for="editGameName" class="block text-sm font-medium text-slate-300 mb-1">Game Title</label>
+                    <input type="text" id="editGameName" required maxlength="50"
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-yellow-500 focus:ring-yellow-500 transition duration-150">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Current Cover Image</label>
+                    <img id="editCurrentCoverPreview" class="w-full h-32 object-cover rounded-lg border border-slate-600 mb-2">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="editCoverImageFile" class="block text-sm font-medium text-slate-300 mb-1">New Cover Image (Optional, Max 700KB)</label>
+                    <input type="file" id="editCoverImageFile" accept="image/*"
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-yellow-500 focus:ring-yellow-500 transition duration-150 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700">
+                    <p class="text-xs text-slate-400 mt-1">Leave empty to keep current image. Max: 700KB.</p>
+                    <p id="editUploadError" class="text-xs text-red-400 mt-1 hidden"></p>
+                </div>
+
+                <!-- Launch Type Selector -->
+                <div class="mb-4 bg-slate-700 p-4 rounded-lg">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Game Launch Method</label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center text-white">
+                            <input type="radio" name="editLaunchType" value="html" checked onchange="toggleEditLaunchFields('html')" class="mr-2 text-yellow-500">
+                            Internal HTML Code
+                        </label>
+                        <label class="flex items-center text-white">
+                            <input type="radio" name="editLaunchType" value="url" onchange="toggleEditLaunchFields('url')" class="mr-2 text-yellow-500">
+                            External URL
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Conditional URL Input -->
+                <div class="mb-4 hidden" id="editLaunchUrlGroup">
+                    <label for="editLaunchUrl" class="block text-sm font-medium text-slate-300 mb-1">External Launch URL</label>
+                    <input type="url" id="editLaunchUrl" placeholder="https://example.com/game"
+                           class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-yellow-500 focus:ring-yellow-500 transition duration-150">
+                    <p class="text-xs text-slate-400 mt-1">Must be a full, valid URL starting with http:// or https://</p>
+                </div>
+
+                <!-- Conditional HTML Code Input -->
+                <div class="mb-4" id="editHtmlCodeGroup">
+                    <label for="editHtmlCode" class="block text-sm font-medium text-slate-300 mb-1">Game HTML Code (The full runnable code)</label>
+                    <textarea id="editHtmlCode" rows="10" required
+                              class="w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-yellow-500 focus:ring-yellow-500 transition duration-150 font-mono text-xs"></textarea>
+                    <p class="text-xs text-red-400 mt-1">Warning: Submitted code runs in a sandboxed iframe. Do not submit malicious code.</p>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="showEditModal(false)"
+                            class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" id="updateGameButton"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center space-x-2">
+                        <span id="updateText">Update Game</span>
+                        <div id="updateSpinner" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-yellow-400 rounded-full"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Game Player Modal -->
     <div id="playerModal" class="fixed inset-0 bg-black bg-opacity-95 hidden items-center justify-center p-2 z-50 transition-opacity duration-300">
         <div class="bg-slate-900 p-2 rounded-xl w-full h-full max-w-7xl max-h-[95vh] flex flex-col card-shadow">
@@ -234,7 +452,7 @@
             
             <div class="flex justify-end space-x-3 mt-6">
                 <button type="button" onclick="window.confirmAction(false)"
-                        class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                        class="bg-slate-600 hover:bg-slate-700 text-white font-semibent py-2 px-4 rounded-lg transition duration-150">
                     Cancel
                 </button>
                 <button type="button" onclick="window.confirmAction(true)"
@@ -245,24 +463,110 @@
         </div>
     </div>
 
+    <!-- Announcement Modal -->
+    <div id="announcementModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-lg card-shadow">
+            <h3 class="text-xl font-bold mb-4 text-orange-400 border-b border-slate-700 pb-2">Broadcast Announcement</h3>
+            
+            <form id="announcementForm" onsubmit="event.preventDefault(); sendAnnouncement();">
+                <div class="mb-4">
+                    <label for="announcementMessage" class="block text-sm font-medium text-slate-300 mb-1">Message (will display for 10 seconds to ALL users)</label>
+                    <textarea id="announcementMessage" rows="4" maxlength="500" required
+                              placeholder="Enter your announcement message here..."
+                              class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 focus:border-orange-500 focus:ring-orange-500 transition duration-150 text-white placeholder-slate-400 text-lg font-bold"></textarea>
+                    <p class="text-xs text-slate-400 mt-1">Max 500 characters. Message will appear on every user's screen for 10 seconds.</p>
+                </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Import deleteDoc here
-        import { getFirestore, collection, addDoc, onSnapshot, query, getDoc, setDoc, doc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="showAnnouncementModal(false)"
+                            class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" id="sendAnnouncementButton"
+                            class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center space-x-2">
+                        <span id="announcementSubmitText">Send Announcement</span>
+                        <div id="announcementSpinner" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-orange-400 rounded-full"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // IMPORTANT: In a real environment, __firebase_config should be used.
-        // For demonstration purposes with the provided snippet, we stick to the hardcoded config.
-        const firebaseConfig = {
-            apiKey: "AIzaSyBWf6HBPG9PSdMFSK3QCH3HniT_8CJ3WKo",
-            authDomain: "playstation-272c0.firebaseapp.com",
-            projectId: "playstation-272c0",
-            storageBucket: "playstation-272c0.firebasestorage.app",
-            messagingSenderId: "1011461792326",
-            appId: "1:1011461792326:web:2f57279ee1bed9fad0a047"
-        };
+    <!-- NEW: Create Poll Modal -->
+    <div id="createPollModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-xl w-full max-w-lg card-shadow max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 text-cyan-400 border-b border-slate-700 pb-2">Create Community Poll</h3>
+            
+            <form id="createPollForm" onsubmit="event.preventDefault(); createPoll();">
+                <div class="mb-4">
+                    <label for="pollQuestionInput" class="block text-sm font-medium text-slate-300 mb-1">Poll Question</label>
+                    <input type="text" id="pollQuestionInput" required maxlength="200"
+                           class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white"
+                           placeholder="e.g., What's your favorite game genre?">
+                    <p class="text-xs text-slate-400 mt-1">Maximum 200 characters</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Poll Options</label>
+                    <div id="pollOptionsContainer" class="space-y-2">
+                        <input type="text" class="poll-option-input w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white" placeholder="Option 1" required maxlength="50">
+                        <input type="text" class="poll-option-input w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white" placeholder="Option 2" required maxlength="50">
+                    </div>
+                    <div class="flex justify-between mt-2">
+                        <button type="button" onclick="addPollOption()" class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition">
+                            + Add Option
+                        </button>
+                        <span id="optionCount" class="text-xs text-slate-400">2 options (min 2, max 6)</span>
+                    </div>
+                </div>
+
+                <div class="mb-4 bg-slate-700 p-3 rounded-lg">
+                    <p class="text-sm text-slate-300">⚠️ <strong>Important:</strong> Creating a new poll will immediately replace any existing active poll and reset all votes.</p>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="showCreatePollModal(false)"
+                            class="bg-slate-600 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">
+                        Cancel
+                    </button>
+                    <button type="submit" id="createPollButtonSubmit"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center space-x-2">
+                        <span id="createPollText">Create Poll</span>
+                        <div id="createPollSpinner" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-cyan-400 rounded-full"></div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Announcement Display Overlay -->
+    <div id="announcementOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-[100] backdrop-blur-sm">
+        <div class="max-w-4xl mx-auto p-8 text-center">
+            <div class="bg-gradient-to-r from-orange-600 via-red-600 to-purple-600 p-1 rounded-2xl">
+                <div class="bg-slate-900 p-12 rounded-2xl border-2 border-transparent">
+                    <h2 class="text-6xl font-black text-white uppercase tracking-wider announcement-text" id="announcementDisplayText"></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+   <!-- Firebase SDKs -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, getDoc, setDoc, doc, serverTimestamp, deleteDoc, updateDoc, increment, runTransaction, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBWf6HBPG9PSdMFSK3QCH3HniT_8CJ3WKo",
+        authDomain: "playstation-272c0.firebaseapp.com",
+        projectId: "playstation-272c0",
+        storageBucket: "playstation-272c0.firebasestorage.app",
+        messagingSenderId: "1011461792326",
+        appId: "1:1011461792326:web:2f57279ee1bed9fad0a047"
+    };
+    
+    // ... rest of your code
         
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -270,28 +574,40 @@
         let db;
         let auth;
         let currentUserId = 'anonymous';
-        let isAuthorizedUploader = false; // New variable to track authorization status
+        let isAuthorizedUploader = false;
         let uploadedImageUrl = null;
         let allGames = [];
+        let allUsers = []; // Store all users for admin view
         let currentSearchTerm = '';
         let currentSortOrder = 'newest';
-        let userProgress = {}; // Store user's game progress locally
-        let pendingDeletionGameId = null; // State for confirmation modal
+        let userProgress = {}; 
+        let pendingDeletionGameId = null;
+        let editingGameData = null; // Track game being edited
+        let announcementListener = null; // Store listener reference
+        let currentPoll = null; // NEW: Track current poll
+        let hasVoted = false; // NEW: Track if user voted
 
         // UI Element References
         const gamesGrid = document.getElementById('gamesGrid');
         const savedGamesGrid = document.getElementById('savedGamesGrid');
         const savedGamesSection = document.getElementById('savedGamesSection');
         const uploadModal = document.getElementById('uploadModal');
+        const editModal = document.getElementById('editModal');
         const playerModal = document.getElementById('playerModal');
         const gamePlayerFrame = document.getElementById('gamePlayerFrame');
         const uploadForm = document.getElementById('uploadForm');
+        const editForm = document.getElementById('editForm');
         const submitGameButton = document.getElementById('submitGameButton');
         const submitText = document.getElementById('submitText');
         const submitSpinner = document.getElementById('submitSpinner');
+        const updateGameButton = document.getElementById('updateGameButton');
+        const updateText = document.getElementById('updateText');
+        const updateSpinner = document.getElementById('updateSpinner');
         const loadingMessage = document.getElementById('loadingMessage');
         const coverImageFileInput = document.getElementById('coverImageFile');
+        const editCoverImageFileInput = document.getElementById('editCoverImageFile');
         const uploadError = document.getElementById('uploadError');
+        const editUploadError = document.getElementById('editUploadError');
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
         const confirmModal = document.getElementById('confirmModal');
@@ -300,21 +616,51 @@
         const htmlCodeGroup = document.getElementById('htmlCodeGroup');
         const htmlCodeInput = document.getElementById('htmlCode');
         const launchUrlInput = document.getElementById('launchUrl');
+        const editLaunchUrlGroup = document.getElementById('editLaunchUrlGroup');
+        const editHtmlCodeGroup = document.getElementById('editHtmlCodeGroup');
+        const editHtmlCodeInput = document.getElementById('editHtmlCode');
+        const editLaunchUrlInput = document.getElementById('editLaunchUrl');
+        const totalUserCount = document.getElementById('totalUserCount');
+        const manageUsersButton = document.getElementById('manageUsersButton');
+        const uploadButton = document.getElementById('uploadButton');
+        const announceButton = document.getElementById('announceButton');
+        const announcementModal = document.getElementById('announcementModal');
+        const announcementForm = document.getElementById('announcementForm');
+        const announcementMessageInput = document.getElementById('announcementMessage');
+        const sendAnnouncementButton = document.getElementById('sendAnnouncementButton');
+        const announcementSubmitText = document.getElementById('announcementSubmitText');
+        const announcementSpinner = document.getElementById('announcementSpinner');
+        const announcementOverlay = document.getElementById('announcementOverlay');
+        const announcementDisplayText = document.getElementById('announcementDisplayText');
+        // NEW: Poll UI References
+        const createPollButton = document.getElementById('createPollButton');
+        const createPollModal = document.getElementById('createPollModal');
+        const createPollForm = document.getElementById('createPollForm');
+        const pollSection = document.getElementById('pollSection');
+        const pollQuestion = document.getElementById('pollQuestion');
+        const pollOptions = document.getElementById('pollOptions');
+        const pollResults = document.getElementById('pollResults');
+        const pollVoteButtonContainer = document.getElementById('pollVoteButtonContainer');
+        const pollVoteButton = document.getElementById('pollVoteButton');
+        const pollStatus = document.getElementById('pollStatus');
 
-
-        // Firestore Paths (Updated to use user-specific paths for progress and lastPlayed)
+        // Firestore Paths
         const GAMES_COLLECTION_PATH = `/artifacts/${appId}/public/data/games`;
+        const USERS_PUBLIC_COLLECTION_PATH = `/artifacts/${appId}/public/data/users`;
+        const ANNOUNCEMENTS_COLLECTION_PATH = `/artifacts/${appId}/public/data/announcements`;
+        const POLLS_COLLECTION_PATH = `/artifacts/${appId}/public/data/polls`; // NEW
+        const getPollVotesCollectionPath = (pollId) => `/artifacts/${appId}/public/data/polls/${pollId}/votes`; // NEW
+        const getUserPollVoteDocPath = (userId, pollId) => `/artifacts/${appId}/users/${userId}/pollVotes/${pollId}`; // NEW
         const getProgressCollectionPath = (userId) => `/artifacts/${appId}/users/${userId}/gameProgress`;
         const getLastPlayedCollectionPath = (userId) => `/artifacts/${appId}/users/${userId}/lastPlayed`;
-        // IMPORTANT: This ID must be set to the user ID of the authorized moderator/uploader.
-        // The current hardcoded ID is kept from the original file for consistency.
-        const AUTHORIZED_UPLOADER_ID = "T2tTfVmsQidTCt6JfMxTNS3qxL73"; 
+        
+        const SUPER_ADMIN_ID = "T2tTfVmsQidTCt6JfMxTNS3qxL73"; 
 
         // Firebase Initialization
         window.initFirebase = async () => {
             if (!firebaseConfig || !firebaseConfig.projectId) {
-                console.error("Firebase configuration is missing or invalid. Cannot initialize Firestore.");
-                loadingMessage.textContent = "Error: Database configuration missing or invalid. Cannot load games.";
+                console.error("Firebase configuration is missing or invalid.");
+                loadingMessage.textContent = "Error: Database configuration missing.";
                 return;
             }
 
@@ -326,128 +672,793 @@
                 if (initialAuthToken) {
                     try {
                         await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("Sign-in with custom token successful.");
                     } catch (e) {
-                        console.warn(`Custom token sign-in failed (${e.code || e.message}). Falling back to anonymous sign-in.`);
                         await signInAnonymously(auth);
                     }
                 } else {
                     await signInAnonymously(auth);
                 }
 
-                onAuthStateChanged(auth, (user) => {
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUserId = user.uid;
-                        isAuthorizedUploader = currentUserId === AUTHORIZED_UPLOADER_ID;
                         document.getElementById('currentUserId').textContent = currentUserId;
-                        console.log("User authenticated:", currentUserId);
-                        
-                        // Show/hide upload button based on authorization
-                        const uploadButton = document.getElementById('uploadButton');
-                        if (isAuthorizedUploader) {
-                            uploadButton.style.display = 'flex';
-                        } else {
-                            uploadButton.style.display = 'none';
-                        }
-                        
+
+                        // 1. Register User in Public Collection
+                        await registerUserPublicly(user.uid);
+
+                        // 2. Check Admin Status (Wait for listener)
+                        checkAdminStatus(user.uid);
+
                         loadGames();
                         loadUserProgress();
                         loadLastPlayed();
+                        loadTotalUserCount();
+                        loadPoll(); // NEW: Load current poll
+                        listenForAnnouncements();
                     } else {
                         currentUserId = 'anonymous';
                         isAuthorizedUploader = false;
-                        document.getElementById('currentUserId').textContent = 'Signed out/Anonymous';
-                        document.getElementById('uploadButton').style.display = 'none';
-                        // If signed out, clear the data and hide sections
+                        document.getElementById('currentUserId').textContent = 'Signed out';
+                        uploadButton.style.display = 'none';
+                        manageUsersButton.style.display = 'none';
+                        announceButton.style.display = 'none';
+                        createPollButton.style.display = 'none'; // NEW
+                        document.getElementById('adminBadge').classList.add('hidden');
                         allGames = [];
                         userProgress = {};
                         renderGames([]);
                         savedGamesSection.classList.add('hidden');
                         document.getElementById('lastPlayedSection').classList.add('hidden');
-                        console.log("User signed out.");
+                        pollSection.classList.add('hidden'); // NEW
                     }
                 });
 
             } catch (error) {
-                console.error("Error initializing Firebase or signing in:", error);
-                loadingMessage.textContent = "Error: Failed to initialize database or authenticate.";
+                console.error("Error initializing Firebase:", error);
+                loadingMessage.textContent = "Error: Failed to initialize database.";
             }
         };
 
-        // Firestore Operations
+        // --- USER MANAGEMENT LOGIC ---
+
+        async function registerUserPublicly(userId) {
+            if (!db) return;
+            const userRef = doc(db, USERS_PUBLIC_COLLECTION_PATH, userId);
+            try {
+                // Use setDoc with merge to avoid overwriting existing data (like isAdmin status)
+                await setDoc(userRef, {
+                    userId: userId,
+                    lastSeen: serverTimestamp(),
+                    // We don't overwrite isAdmin here
+                }, { merge: true });
+            } catch (e) {
+                console.error("Error registering user:", e);
+            }
+        }
+
+        function checkAdminStatus(userId) {
+            // Logic: Super Admin ID OR Document has isAdmin: true
+            if (userId === SUPER_ADMIN_ID) {
+                setAdminMode(true);
+                return;
+            }
+
+            const userRef = doc(db, USERS_PUBLIC_COLLECTION_PATH, userId);
+            onSnapshot(userRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().isAdmin === true) {
+                    setAdminMode(true);
+                } else {
+                    setAdminMode(false);
+                }
+            });
+        }
+
+        function setAdminMode(isAdmin) {
+            isAuthorizedUploader = isAdmin;
+            if (isAuthorizedUploader) {
+                uploadButton.style.display = 'flex';
+                manageUsersButton.style.display = 'flex';
+                announceButton.style.display = 'flex';
+                createPollButton.style.display = 'flex'; // NEW
+                document.getElementById('adminBadge').classList.remove('hidden');
+                // Re-render games to show delete/pin buttons if they were hidden
+                renderGames(getFilteredAndSortedGames());
+            } else {
+                uploadButton.style.display = 'none';
+                manageUsersButton.style.display = 'none';
+                announceButton.style.display = 'none';
+                createPollButton.style.display = 'none'; // NEW
+                document.getElementById('adminBadge').classList.add('hidden');
+                renderGames(getFilteredAndSortedGames());
+            }
+        }
+
+        function loadTotalUserCount() {
+            const q = query(collection(db, USERS_PUBLIC_COLLECTION_PATH));
+            onSnapshot(q, (snapshot) => {
+                const count = snapshot.size;
+                totalUserCount.textContent = `Users: ${count}`;
+                
+                // Store all users for admin modal if needed
+                allUsers = [];
+                snapshot.forEach(doc => {
+                    allUsers.push(doc.data());
+                });
+                
+                // If modal is open, refresh list
+                if (document.getElementById('userManagementModal').style.display === 'flex') {
+                    window.filterUserList();
+                }
+            });
+        }
+
+        // --- ADMIN MODAL FUNCTIONS ---
+
+        window.openUserManagement = () => {
+            if (!isAuthorizedUploader) return;
+            document.getElementById('userManagementModal').style.display = 'flex';
+            window.filterUserList();
+        };
+
+        window.filterUserList = () => {
+            const term = document.getElementById('userSearchInput').value.toLowerCase();
+            const container = document.getElementById('userListContainer');
+            container.innerHTML = '';
+
+            const filtered = allUsers.filter(u => u.userId.toLowerCase().includes(term));
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-center p-4">No users found.</p>';
+                return;
+            }
+
+            filtered.forEach(u => {
+                const isMe = u.userId === currentUserId;
+                const isSuper = u.userId === SUPER_ADMIN_ID;
+                const isAdmin = u.isAdmin === true || isSuper;
+                
+                const div = document.createElement('div');
+                div.className = 'user-list-item flex justify-between items-center p-3 bg-slate-800 rounded mb-2';
+                
+                let btnHtml = '';
+                if (isSuper) {
+                    btnHtml = '<span class="text-xs text-yellow-500 font-bold border border-yellow-500 px-2 py-1 rounded">SUPER ADMIN</span>';
+                } else if (isAdmin) {
+                    btnHtml = `<button onclick="toggleAdmin('${u.userId}', false)" class="text-xs bg-red-900 text-red-200 px-3 py-1 rounded hover:bg-red-700 transition">Revoke Admin</button>`;
+                } else {
+                    btnHtml = `<button onclick="toggleAdmin('${u.userId}', true)" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-500 transition shadow-lg shadow-blue-500/30">Give Uploader</button>`;
+                }
+
+                div.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-mono text-sm text-slate-200">${u.userId} ${isMe ? '(You)' : ''}</span>
+                        <span class="text-xs text-slate-500">Last Seen: ${u.lastSeen ? new Date(u.lastSeen.seconds * 1000).toLocaleDateString() : 'Unknown'}</span>
+                    </div>
+                    <div>
+                        ${btnHtml}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.toggleAdmin = async (targetId, shouldBeAdmin) => {
+            if (!isAuthorizedUploader) return;
+            
+            try {
+                const userRef = doc(db, USERS_PUBLIC_COLLECTION_PATH, targetId);
+                await setDoc(userRef, { isAdmin: shouldBeAdmin }, { merge: true });
+                alertMessage(shouldBeAdmin ? "Admin rights GRANTED." : "Admin rights REVOKED.", shouldBeAdmin ? "green" : "red");
+            } catch (e) {
+                console.error("Error toggling admin:", e);
+                alertMessage("Failed to update user permissions.", "red");
+            }
+        };
+
+        // --- IMPORT/EXPORT LOGIC ---
+        window.exportSavedData = () => {
+            if (!userProgress || Object.keys(userProgress).length === 0) {
+                alertMessage("No saved data found to export.", "red");
+                return;
+            }
+            try {
+                const dataStr = JSON.stringify(userProgress, null, 2);
+                const blob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `benxix_home_save_data_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alertMessage("Save data exported successfully!", "green");
+            } catch (error) {
+                alertMessage("Failed to export data.", "red");
+            }
+        };
+
+        window.handleImportFile = async (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    let successCount = 0;
+                    alertMessage("Importing data... Please wait.", "blue");
+                    for (const [gameId, gameData] of Object.entries(importedData)) {
+                        if (gameData && gameData.data) {
+                            await saveGameProgress(gameId, gameData.data);
+                            successCount++;
+                        }
+                    }
+                    if (successCount > 0) alertMessage(`Successfully imported data for ${successCount} games!`, "green");
+                    else alertMessage("No valid data found.", "yellow");
+                } catch (error) {
+                    alertMessage("Failed to import data.", "red");
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        // --- FIRESTORE OPERATIONS ---
         
-        /**
-         * Toggles the 'isPinned' status for a game. Only for AUTHORIZED_UPLOADER_ID.
-         * @param {string} gameId The ID of the game document.
-         * @param {boolean} currentPinnedStatus The current pinned status.
-         */
         window.togglePinGame = async (gameId, currentPinnedStatus) => {
             if (!isAuthorizedUploader) {
-                alertMessage("Permission Denied: Only the authorized moderator can pin games.", "red");
+                alertMessage("Permission Denied.", "red");
                 return;
             }
-
             try {
                 const gameRef = doc(db, GAMES_COLLECTION_PATH, gameId);
-                const newPinnedStatus = !currentPinnedStatus;
-                await setDoc(gameRef, { isPinned: newPinnedStatus }, { merge: true });
-
-                alertMessage(`Game ID ${gameId.substring(0, 8)}... has been ${newPinnedStatus ? 'PINNED' : 'UNPINNED'}.`, "purple");
-
+                await setDoc(gameRef, { isPinned: !currentPinnedStatus }, { merge: true });
+                alertMessage(!currentPinnedStatus ? "Game PINNED." : "Game UNPINNED.", "purple");
             } catch (error) {
-                console.error("Error toggling pin status: ", error);
-                alertMessage("Failed to toggle pin status. Check console for details.", "red");
+                alertMessage("Failed to toggle pin.", "red");
             }
         };
 
-        /**
-         * Deletes a game document from Firestore.
-         * This function should only be callable by the AUTHORIZED_UPLOADER_ID.
-         * @param {string} gameId The ID of the game document to delete.
-         */
         window.deleteGame = async (gameId, gameName) => {
             if (!isAuthorizedUploader) {
-                alertMessage("Permission Denied: Only the authorized moderator can delete games.", "red");
+                alertMessage("Permission Denied.", "red");
                 return;
             }
-
-            // Set state for confirmation modal
             pendingDeletionGameId = gameId;
-            confirmMessage.textContent = `Are you sure you want to permanently delete the game: "${gameName}"? This action cannot be undone.`;
+            confirmMessage.textContent = `Are you sure you want to delete "${gameName}"?`;
             confirmModal.style.display = 'flex';
         };
 
-        /**
-         * Handles the confirmation from the modal.
-         * @param {boolean} confirmed True if the user confirmed the deletion.
-         */
         window.confirmAction = async (confirmed) => {
             confirmModal.style.display = 'none';
             if (!confirmed || !pendingDeletionGameId) {
                 pendingDeletionGameId = null;
                 return;
             }
-
             const gameId = pendingDeletionGameId;
             pendingDeletionGameId = null;
-
             try {
-                const gameRef = doc(db, GAMES_COLLECTION_PATH, gameId);
-                await deleteDoc(gameRef);
-
-                // Optional: Delete related progress docs, though they don't block deletion.
-                // In a production app, you would batch delete these. For simplicity, we skip this here.
-
-                alertMessage(`Game ID ${gameId.substring(0, 8)}... has been deleted.`, "green");
+                await deleteDoc(doc(db, GAMES_COLLECTION_PATH, gameId));
+                alertMessage("Game deleted.", "green");
             } catch (error) {
-                console.error("Error deleting document: ", error);
-                alertMessage("Failed to delete game. Check console for details.", "red");
+                alertMessage("Failed to delete game.", "red");
             }
         };
 
-        window.loadGames = () => {
+        // --- POLL SYSTEM FUNCTIONS ---
+        
+        window.openCreatePollModal = () => {
+            if (!isAuthorizedUploader) return;
+            showCreatePollModal(true);
+        };
+        
+        window.showCreatePollModal = (show) => {
+            if (show) {
+                createPollModal.style.display = 'flex';
+            } else {
+                createPollModal.style.display = 'none';
+                createPollForm.reset();
+                // Reset to 2 default options
+                const container = document.getElementById('pollOptionsContainer');
+                container.innerHTML = `
+                    <input type="text" class="poll-option-input w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white" placeholder="Option 1" required maxlength="50">
+                    <input type="text" class="poll-option-input w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white" placeholder="Option 2" required maxlength="50">
+                `;
+                document.getElementById('optionCount').textContent = '2 options (min 2, max 6)';
+            }
+        };
+        
+        window.addPollOption = () => {
+            const container = document.getElementById('pollOptionsContainer');
+            const optionCount = container.querySelectorAll('.poll-option-input').length;
+            if (optionCount >= 6) {
+                alertMessage("Maximum 6 options allowed.", "red");
+                return;
+            }
+            
+            const newOption = document.createElement('input');
+            newOption.type = 'text';
+            newOption.className = 'poll-option-input w-full p-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-cyan-500 focus:ring-cyan-500 transition duration-150 text-white';
+            newOption.placeholder = `Option ${optionCount + 1}`;
+            newOption.required = true;
+            newOption.maxLength = 50;
+            container.appendChild(newOption);
+            
+            document.getElementById('optionCount').textContent = `${optionCount + 1} options (min 2, max 6)`;
+        };
+        
+        window.createPoll = async () => {
+            if (!db || !isAuthorizedUploader) return;
+            
+            const question = document.getElementById('pollQuestionInput').value.trim();
+            const optionInputs = Array.from(document.querySelectorAll('.poll-option-input'));
+            const options = optionInputs.map(input => input.value.trim()).filter(opt => opt !== '');
+            
+            if (!question) {
+                alertMessage("Please enter a poll question.", "red");
+                return;
+            }
+            
+            if (options.length < 2) {
+                alertMessage("Please provide at least 2 options.", "red");
+                return;
+            }
+            
+            if (options.length !== new Set(options).size) {
+                alertMessage("All options must be unique.", "red");
+                return;
+            }
+            
+            const createPollButtonSubmit = document.getElementById('createPollButtonSubmit');
+            const createPollText = document.getElementById('createPollText');
+            const createPollSpinner = document.getElementById('createPollSpinner');
+            
+            createPollButtonSubmit.disabled = true;
+            createPollText.textContent = 'Creating...';
+            createPollSpinner.classList.remove('hidden');
+            
+            // Build votes object
+            const votes = {};
+            options.forEach(opt => votes[opt] = 0);
+            
+            const pollData = {
+                question: question,
+                options: options,
+                votes: votes,
+                createdBy: currentUserId,
+                createdAt: serverTimestamp(),
+                isActive: true,
+                totalVotes: 0
+            };
+            
+            try {
+                // Deactivate any existing polls by setting isActive to false
+                const pollsSnapshot = await getDocs(query(collection(db, POLLS_COLLECTION_PATH)));
+                const batchUpdates = [];
+                pollsSnapshot.forEach(docSnap => {
+                    const updateRef = doc(db, POLLS_COLLECTION_PATH, docSnap.id);
+                    batchUpdates.push(setDoc(updateRef, { isActive: false }, { merge: true }));
+                });
+                await Promise.all(batchUpdates);
+                
+                // Create new poll
+                await addDoc(collection(db, POLLS_COLLECTION_PATH), pollData);
+                
+                alertMessage("Poll created successfully!", "cyan");
+                showCreatePollModal(false);
+            } catch (e) {
+                console.error("Error creating poll:", e);
+                alertMessage("Failed to create poll: " + e.message, "red");
+            } finally {
+                createPollButtonSubmit.disabled = false;
+                createPollText.textContent = 'Create Poll';
+                createPollSpinner.classList.add('hidden');
+            }
+        };
+        
+        window.loadPoll = () => {
             if (!db) return;
             
+            const pollsQuery = query(collection(db, POLLS_COLLECTION_PATH));
+            onSnapshot(pollsQuery, async (snapshot) => {
+                const polls = [];
+                snapshot.forEach(docSnap => {
+                    polls.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                
+                // Find the active poll
+                const activePoll = polls.find(p => p.isActive === true);
+                
+                if (activePoll) {
+                    currentPoll = activePoll;
+                    hasVoted = false;
+                    
+                    // Check if current user has voted
+                    if (currentUserId !== 'anonymous') {
+                        const userVoteRef = doc(db, getUserPollVoteDocPath(currentUserId, activePoll.id));
+                        const userVoteSnap = await getDoc(userVoteRef);
+                        hasVoted = userVoteSnap.exists();
+                    }
+                    
+                    renderPoll();
+                } else {
+                    currentPoll = null;
+                    hasVoted = false;
+                    pollSection.classList.add('hidden');
+                }
+            });
+        };
+        
+        window.renderPoll = () => {
+            if (!currentPoll) return;
+            
+            pollSection.classList.remove('hidden');
+            pollQuestion.textContent = currentPoll.question;
+            
+            // Show/hide elements based on vote status
+            if (hasVoted) {
+                pollOptions.classList.add('hidden');
+                pollVoteButtonContainer.classList.add('hidden');
+                pollResults.classList.remove('hidden');
+                pollStatus.textContent = 'You have voted';
+                renderPollResults();
+            } else {
+                pollOptions.classList.remove('hidden');
+                pollVoteButtonContainer.classList.remove('hidden');
+                pollResults.classList.add('hidden');
+                pollStatus.textContent = 'Click to vote';
+                renderPollOptions();
+            }
+        };
+        
+        window.renderPollOptions = () => {
+            pollOptions.innerHTML = '';
+            currentPoll.options.forEach((option, index) => {
+                const div = document.createElement('div');
+                div.className = 'poll-option flex items-center p-3 rounded-lg cursor-pointer transition duration-150';
+                div.onclick = () => selectPollOption(index);
+                
+                div.innerHTML = `
+                    <input type="radio" name="pollOption" value="${option}" class="mr-3 text-cyan-500" id="pollOption-${index}">
+                    <label for="pollOption-${index}" class="flex-grow cursor-pointer text-lg">${option}</label>
+                `;
+                pollOptions.appendChild(div);
+            });
+        };
+        
+        window.selectPollOption = (index) => {
+            const radio = document.getElementById(`pollOption-${index}`);
+            if (radio) radio.checked = true;
+        };
+        
+        window.submitVote = async () => {
+            if (!db || !currentPoll || currentUserId === 'anonymous') {
+                alertMessage("You must be signed in to vote.", "red");
+                return;
+            }
+            
+            const selectedOption = document.querySelector('input[name="pollOption"]:checked');
+            if (!selectedOption) {
+                alertMessage("Please select an option.", "red");
+                return;
+            }
+            
+            const vote = selectedOption.value;
+            
+            try {
+                // Use transaction to update vote count
+                const pollRef = doc(db, POLLS_COLLECTION_PATH, currentPoll.id);
+                const userVoteRef = doc(db, getUserPollVoteDocPath(currentUserId, currentPoll.id));
+                
+                await runTransaction(db, async (transaction) => {
+                    const pollDoc = await transaction.get(pollRef);
+                    if (!pollDoc.exists()) throw "Poll not found";
+                    
+                    // Check if user already voted
+                    const userVoteDoc = await transaction.get(userVoteRef);
+                    if (userVoteDoc.exists()) throw "Already voted";
+                    
+                    // Increment vote count
+                    const newVotes = { ...pollDoc.data().votes };
+                    newVotes[vote] = (newVotes[vote] || 0) + 1;
+                    
+                    transaction.update(pollRef, {
+                        votes: newVotes,
+                        totalVotes: increment(1)
+                    });
+                    
+                    transaction.set(userVoteRef, {
+                        votedOption: vote,
+                        votedAt: serverTimestamp()
+                    });
+                });
+                
+                alertMessage("Vote submitted!", "cyan");
+            } catch (e) {
+                if (e === "Already voted") {
+                    alertMessage("You have already voted.", "red");
+                } else {
+                    console.error("Error submitting vote:", e);
+                    alertMessage("Failed to submit vote.", "red");
+                }
+            }
+        };
+        
+        window.renderPollResults = () => {
+            pollResults.innerHTML = '';
+            const total = currentPoll.totalVotes || 0;
+            
+            // Sort options by vote count
+            const sortedOptions = currentPoll.options.map(opt => ({
+                option: opt,
+                votes: currentPoll.votes[opt] || 0
+            })).sort((a, b) => b.votes - a.votes);
+            
+            sortedOptions.forEach(optData => {
+                const percentage = total > 0 ? (optData.votes / total * 100).toFixed(1) : 0;
+                const isWinner = optData.votes === Math.max(...sortedOptions.map(o => o.votes));
+                
+                const div = document.createElement('div');
+                div.className = 'relative';
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-white font-medium">${optData.option}</span>
+                        <span class="text-slate-400 text-sm">${optData.votes} votes (${percentage}%)</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-6 relative overflow-hidden">
+                        <div class="poll-bar bg-gradient-to-r from-cyan-600 to-blue-600 h-full rounded-full flex items-center justify-end pr-2" style="width: ${percentage}%">
+                            ${percentage > 15 ? `<span class="text-white text-xs font-bold">${percentage}%</span>` : ''}
+                        </div>
+                    </div>
+                    ${isWinner && total > 0 ? '<div class="text-yellow-400 text-xs mt-1 font-bold">🏆 Leading</div>' : ''}
+                `;
+                
+                pollResults.appendChild(div);
+            });
+            
+            // Add total votes footer
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'text-center text-slate-400 text-sm mt-4 pt-3 border-t border-slate-700';
+            totalDiv.textContent = `Total Votes: ${total}`;
+            pollResults.appendChild(totalDiv);
+        };
+
+        // --- ANNOUNCEMENT FUNCTIONS ---
+        
+        window.openAnnouncementModal = () => {
+            if (!isAuthorizedUploader) return;
+            showAnnouncementModal(true);
+        };
+        
+        window.showAnnouncementModal = (show) => {
+            if (show) {
+                announcementModal.style.display = 'flex';
+            } else {
+                announcementModal.style.display = 'none';
+                announcementForm.reset();
+            }
+        };
+        
+        window.sendAnnouncement = async () => {
+            if (!db || !isAuthorizedUploader) return;
+            
+            const message = announcementMessageInput.value.trim();
+            if (!message) {
+                alertMessage("Message cannot be empty.", "red");
+                return;
+            }
+            
+            sendAnnouncementButton.disabled = true;
+            announcementSubmitText.textContent = 'Sending...';
+            announcementSpinner.classList.remove('hidden');
+            
+            try {
+                // Add to Firestore - this will trigger the listener for all users
+                await addDoc(collection(db, ANNOUNCEMENTS_COLLECTION_PATH), {
+                    message: message,
+                    senderId: currentUserId,
+                    timestamp: serverTimestamp(),
+                    expiresAt: Date.now() + 10000 // 10 seconds from now
+                });
+                
+                alertMessage("Announcement sent to all users!", "orange");
+                showAnnouncementModal(false);
+            } catch (e) {
+                alertMessage("Failed to send announcement: " + e.message, "red");
+            } finally {
+                sendAnnouncementButton.disabled = false;
+                announcementSubmitText.textContent = 'Send Announcement';
+                announcementSpinner.classList.add('hidden');
+            }
+        };
+        
+        window.listenForAnnouncements = () => {
+            if (!db) return;
+            
+            const q = query(collection(db, ANNOUNCEMENTS_COLLECTION_PATH));
+            announcementListener = onSnapshot(q, (snapshot) => {
+                // Get the most recent announcement
+                const announcements = [];
+                snapshot.forEach(doc => {
+                    announcements.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (announcements.length === 0) return;
+                
+                // Sort by timestamp desc and get the newest
+                announcements.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                const latestAnnouncement = announcements[0];
+                
+                // Check if it's recent enough (within last 15 seconds to account for latency)
+                const now = Date.now();
+                const announcementTime = (latestAnnouncement.timestamp?.seconds || 0) * 1000;
+                const expiresAt = latestAnnouncement.expiresAt || (announcementTime + 10000);
+                
+                if (now - announcementTime < 15000 && now < expiresAt) {
+                    displayAnnouncement(latestAnnouncement.message);
+                    
+                    // Auto-hide after 10 seconds
+                    setTimeout(() => {
+                        hideAnnouncement();
+                    }, 10000);
+                }
+            });
+        };
+        
+        window.displayAnnouncement = (message) => {
+            announcementDisplayText.textContent = message;
+            announcementOverlay.style.display = 'flex';
+            
+            // Add a small delay to trigger animation
+            setTimeout(() => {
+                announcementOverlay.style.opacity = '1';
+            }, 10);
+        };
+        
+        window.hideAnnouncement = () => {
+            announcementOverlay.style.display = 'none';
+            announcementOverlay.style.opacity = '0';
+        };
+
+        // --- EDIT GAME FUNCTIONS ---
+        
+        window.editGame = (gameId) => {
+            if (!isAuthorizedUploader) {
+                alertMessage("Permission Denied.", "red");
+                return;
+            }
+            
+            const game = allGames.find(g => g.id === gameId);
+            if (!game) {
+                alertMessage("Game not found.", "red");
+                return;
+            }
+            
+            editingGameData = game;
+            
+            // Populate form
+            document.getElementById('editGameId').value = gameId;
+            document.getElementById('editGameName').value = game.name;
+            document.getElementById('editCurrentCoverPreview').src = game.coverUrl;
+            
+            // Set launch type and fields
+            if (game.launchType === 'url' && game.launchUrl) {
+                document.querySelector('input[name="editLaunchType"][value="url"]').checked = true;
+                toggleEditLaunchFields('url');
+                document.getElementById('editLaunchUrl').value = game.launchUrl;
+                document.getElementById('editHtmlCode').value = '';
+            } else {
+                document.querySelector('input[name="editLaunchType"][value="html"]').checked = true;
+                toggleEditLaunchFields('html');
+                document.getElementById('editHtmlCode').value = game.htmlCode || '';
+                document.getElementById('editLaunchUrl').value = '';
+            }
+            
+            showEditModal(true);
+        };
+        
+        window.toggleEditLaunchFields = (type) => {
+            if (type === 'url') {
+                editLaunchUrlGroup.classList.remove('hidden');
+                editHtmlCodeGroup.classList.add('hidden');
+                editHtmlCodeInput.removeAttribute('required');
+                editLaunchUrlInput.setAttribute('required', 'required');
+            } else {
+                editLaunchUrlGroup.classList.add('hidden');
+                editHtmlCodeGroup.classList.remove('hidden');
+                editHtmlCodeInput.setAttribute('required', 'required');
+                editLaunchUrlInput.removeAttribute('required');
+            }
+        };
+        
+        window.showEditModal = (show) => {
+            if (show) {
+                editModal.style.display = 'flex';
+            } else {
+                editModal.style.display = 'none';
+                editCoverImageFileInput.value = '';
+                editUploadError.classList.add('hidden');
+                editingGameData = null;
+            }
+        };
+        
+        window.updateGame = async () => {
+            if (!db || !isAuthorizedUploader || !editingGameData) return;
+            
+            const gameId = document.getElementById('editGameId').value;
+            const name = document.getElementById('editGameName').value.trim();
+            const launchType = document.querySelector('input[name="editLaunchType"]:checked').value;
+            let htmlCode = null;
+            let launchUrl = null;
+            
+            if (launchType === 'html') htmlCode = editHtmlCodeInput.value.trim();
+            else launchUrl = editLaunchUrlInput.value.trim();
+            
+            if (!name || (launchType === 'html' && !htmlCode) || (launchType === 'url' && !launchUrl)) {
+                alertMessage("Missing required fields.", "red");
+                return;
+            }
+            
+            updateGameButton.disabled = true;
+            updateText.textContent = 'Updating...';
+            updateSpinner.classList.remove('hidden');
+            
+            const updateData = {
+                name: name,
+                launchType: launchType,
+                launchUrl: launchUrl,
+                htmlCode: htmlCode,
+                lastUpdated: serverTimestamp()
+            };
+            
+            // Handle new cover image if uploaded
+            if (uploadedImageUrl) {
+                updateData.coverUrl = uploadedImageUrl;
+            }
+            
+            try {
+                if (JSON.stringify({...editingGameData, ...updateData}).length > 1000 * 1024) {
+                    alertMessage("File too large (>1MB).", "red");
+                    return;
+                }
+                
+                const gameRef = doc(db, GAMES_COLLECTION_PATH, gameId);
+                await setDoc(gameRef, updateData, { merge: true });
+                
+                alertMessage("Game updated successfully!", "green");
+                showEditModal(false);
+                uploadedImageUrl = null;
+            } catch (e) {
+                alertMessage("Update failed: " + e.message, "red");
+            } finally {
+                updateGameButton.disabled = false;
+                updateText.textContent = 'Update Game';
+                updateSpinner.classList.add('hidden');
+            }
+        };
+        
+        window.handleEditImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 716800) { 
+                editUploadError.textContent = "File too large. Max 700KB."; 
+                editUploadError.classList.remove('hidden'); 
+                return; 
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => { 
+                uploadedImageUrl = e.target.result; 
+                alertMessage("New image ready.", "green"); 
+            };
+            reader.readAsDataURL(file);
+        };
+        
+        editCoverImageFileInput.addEventListener('change', handleEditImageUpload);
+
+        window.loadGames = () => {
+            if (!db) return;
             const q = query(collection(db, GAMES_COLLECTION_PATH));
             onSnapshot(q, (snapshot) => {
                 allGames = [];
@@ -457,147 +1468,89 @@
                 renderGames(getFilteredAndSortedGames());
                 renderSavedGames();
                 renderLastPlayed(); 
-            }, (error) => {
-                console.error("Error listening to games:", error);
-                loadingMessage.textContent = "Error fetching games. Permission denied.";
-            });
+            }, () => loadingMessage.textContent = "Error fetching games.");
         };
 
-        // Load user's game progress (Updated to use user-specific path)
         window.loadUserProgress = () => {
             if (!db || currentUserId === 'anonymous') return;
-
-            // Target the user's private collection for game progress
             const progressQuery = query(collection(db, getProgressCollectionPath(currentUserId)));
-            
-            // Use onSnapshot for real-time updates
             onSnapshot(progressQuery, (snapshot) => {
                 userProgress = {};
-                snapshot.forEach((doc) => {
-                    // Document ID is of the format 'gameId'
-                    userProgress[doc.id] = doc.data(); 
-                });
+                snapshot.forEach((doc) => userProgress[doc.id] = doc.data());
                 renderSavedGames();
-            }, (error) => {
-                console.error("Error loading user progress:", error);
             });
         };
 
-        // Save last played game (Updated to use user-specific path)
         window.saveLastPlayed = async (gameId) => {
             if (!db || currentUserId === 'anonymous') return;
-
             try {
-                // Use a static doc ID 'lastPlayedDoc' within the user's private collection
                 const lastPlayedRef = doc(db, getLastPlayedCollectionPath(currentUserId), 'lastPlayedDoc');
                 const game = allGames.find(g => g.id === gameId);
                 if (!game) return;
-
                 await setDoc(lastPlayedRef, {
                     gameId: gameId,
                     gameName: game.name,
                     coverUrl: game.coverUrl,
                     lastPlayed: serverTimestamp()
                 });
-            } catch (error) {
-                console.error("Error saving last played:", error);
-            }
+            } catch (error) { console.error(error); }
         };
 
-        // Load last played game (Updated to use user-specific path)
         window.loadLastPlayed = () => {
             if (!db || currentUserId === 'anonymous') return;
-
-            // Use a static doc ID 'lastPlayedDoc' within the user's private collection
             const lastPlayedRef = doc(db, getLastPlayedCollectionPath(currentUserId), 'lastPlayedDoc');
-            
-            // Use onSnapshot to update in real-time if another tab/device plays
             onSnapshot(lastPlayedRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    renderLastPlayed(docSnap.data());
-                } else {
-                    document.getElementById('lastPlayedSection').classList.add('hidden');
-                }
-            }, (error) => {
-                console.error("Error loading last played:", error);
-                document.getElementById('lastPlayedSection').classList.add('hidden');
+                if (docSnap.exists()) renderLastPlayed(docSnap.data());
+                else document.getElementById('lastPlayedSection').classList.add('hidden');
             });
         };
 
-        // Save game progress (Updated to use user-specific path)
         window.saveGameProgress = async (gameId, progressData) => {
             if (!db || currentUserId === 'anonymous') {
-                alertMessage("You must be signed in to save progress!", "red");
+                alertMessage("Sign in to save progress!", "red");
                 return false;
             }
-
             try {
-                // Document ID is the gameId, inside the user's private progress collection
                 const progressRef = doc(db, getProgressCollectionPath(currentUserId), gameId);
-                const progressDoc = {
+                await setDoc(progressRef, {
                     data: progressData,
                     lastSaved: serverTimestamp(),
                     gameName: allGames.find(g => g.id === gameId)?.name || 'Unknown Game'
-                };
-                
-                await setDoc(progressRef, progressDoc, { merge: true });
-                alertMessage("Game progress saved!", "green");
+                }, { merge: true });
                 return true;
             } catch (error) {
-                console.error("Error saving progress:", error);
-                alertMessage("Failed to save progress.", "red");
+                console.error(error);
                 return false;
             }
         };
 
-        // Load game progress (Updated to use user-specific path)
         window.loadGameProgress = async (gameId) => {
             if (!db || currentUserId === 'anonymous') return null;
-
             try {
                 const progressRef = doc(db, getProgressCollectionPath(currentUserId), gameId);
                 const docSnap = await getDoc(progressRef);
-                
-                if (docSnap.exists()) {
-                    return docSnap.data().data || null;
-                }
-                return null;
-            } catch (error) {
-                console.error("Error loading progress:", error);
-                return null;
-            }
+                return docSnap.exists() ? docSnap.data().data : null;
+            } catch (error) { return null; }
         };
 
         window.submitGame = async () => {
             if (!db || !currentUserId) return;
-
             if (!isAuthorizedUploader) {
-                alertMessage("Permission Denied: Only the designated admin ID (" + AUTHORIZED_UPLOADER_ID + ") can upload games.", "red");
+                alertMessage("Permission Denied.", "red");
                 showUploadModal(false);
                 return;
             }
-
+            
             const name = document.getElementById('gameName').value.trim();
             const launchType = document.querySelector('input[name="launchType"]:checked').value;
             let htmlCode = null;
             let launchUrl = null;
 
-            if (launchType === 'html') {
-                htmlCode = htmlCodeInput.value.trim();
-                if (!htmlCode) {
-                    alertMessage("HTML Code is required for internal launch.", "red");
-                    return;
-                }
-            } else if (launchType === 'url') {
-                launchUrl = launchUrlInput.value.trim();
-                if (!launchUrl || !(launchUrl.startsWith('http://') || launchUrl.startsWith('https://'))) {
-                    alertMessage("A valid URL starting with http:// or https:// is required for external launch.", "red");
-                    return;
-                }
-            }
+            if (launchType === 'html') htmlCode = htmlCodeInput.value.trim();
+            else launchUrl = launchUrlInput.value.trim();
 
-            if (!name || !uploadedImageUrl) {
-                alertMessage("Please fill in all required fields and upload an image.", "red");
+            if (!name || !uploadedImageUrl || (launchType === 'html' && !htmlCode) || (launchType === 'url' && !launchUrl)) {
+                alertMessage("Missing fields.", "red");
                 return;
             }
 
@@ -608,18 +1561,16 @@
             const gameData = {
                 name: name,
                 coverUrl: uploadedImageUrl,
-                htmlCode: htmlCode, // null if launchType is 'url'
+                htmlCode: htmlCode,
                 launchType: launchType,
-                launchUrl: launchUrl, // null if launchType is 'html'
+                launchUrl: launchUrl,
                 userId: currentUserId,
                 timestamp: Date.now(),
-                isPinned: false // Default to unpinned
+                isPinned: false
             };
 
-            const docSize = JSON.stringify(gameData).length;
-            const maxSize = 1000 * 1024; // 1MB Firestore limit
-            if (docSize > maxSize) {
-                alertMessage(`Document too large: ${(docSize / 1024).toFixed(2)}KB. Maximum: 1MB. Try reducing image/HTML size.`, "red");
+            if (JSON.stringify(gameData).length > 1000 * 1024) {
+                alertMessage("File too large (>1MB).", "red");
                 submitGameButton.disabled = false;
                 submitText.textContent = 'Share to Home';
                 submitSpinner.classList.add('hidden');
@@ -628,19 +1579,13 @@
 
             try {
                 await addDoc(collection(db, GAMES_COLLECTION_PATH), gameData);
-                console.log("Game successfully added:", name);
-                
                 uploadForm.reset();
                 uploadedImageUrl = null;
-                coverImageFileInput.value = '';
                 showUploadModal(false);
-                // Reset launch fields visually
                 toggleLaunchFields('html'); 
-                alertMessage(`'${name}' has been successfully shared to Home!`, "green");
-
+                alertMessage("Shared to Home!", "green");
             } catch (e) {
-                console.error("Error adding document: ", e);
-                alertMessage("Failed to upload game. Error: " + e.message, "red");
+                alertMessage("Upload failed: " + e.message, "red");
             } finally {
                 submitGameButton.disabled = false;
                 submitText.textContent = 'Share to Home';
@@ -648,64 +1593,39 @@
             }
         };
 
-        // UI Rendering
+        // UI Rendering Helpers
         const createGameCard = (game, hasProgress = false, showControls = false) => {
             const card = document.createElement('div');
             card.className = 'bg-slate-800 rounded-xl overflow-hidden shadow-xl hover:shadow-blue-500/50 transition duration-300 transform hover:scale-[1.02] cursor-pointer card-shadow relative';
-            
-            // Check if game has a URL property to determine launch type
             const isExternalLaunch = game.launchType === 'url' && game.launchUrl;
-            
             const buttonText = isExternalLaunch ? 'Launch External' : (hasProgress ? 'Continue' : 'Launch Game');
-
-            // Progress Badge (Top Left)
-            const progressBadge = hasProgress ? 
-                '<div class="absolute top-2 left-2 saved-badge text-white text-xs font-bold px-2 py-1 rounded-full z-10">Saved</div>' : '';
+            const progressBadge = hasProgress ? '<div class="absolute top-2 left-2 saved-badge text-white text-xs font-bold px-2 py-1 rounded-full z-10">Saved</div>' : '';
             
-            // Admin Controls (Pin/Unpin and Delete, only if authorized)
             let adminControls = '';
             if (showControls) {
                 const isPinned = game.isPinned || false;
-                // Pin Button (Top Right)
-                const pinButton = `
-                    <button onclick="event.stopPropagation(); togglePinGame('${game.id}', ${isPinned});"
-                            class="bg-purple-700/80 hover:bg-purple-600 text-white p-1 rounded-full text-sm font-medium transition duration-150"
-                            title="${isPinned ? 'Unpin Game' : 'Pin to Top'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${isPinned ? 'text-yellow-400 fill-current' : 'text-white'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M15 3l-3-3l-3 3"/><path d="M12 22v-6"/><path d="M15 21l-3 3l-3-3"/><path d="M22 12h-6"/><path d="M21 15l3-3l-3-3"/><path d="M2 12h6"/><path d="M3 15l-3-3l3-3"/></svg>
-                    </button>
-                `;
-                
-                // Delete Button (Bottom Left, still using original location)
-                const deleteButton = `
-                    <button onclick="event.stopPropagation(); deleteGame('${game.id}', '${game.name}');"
-                            class="bg-red-700/80 hover:bg-red-600 delete-button text-white p-1 rounded-full text-sm font-medium transition duration-150"
-                            title="Delete Game">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                `;
-
                 adminControls = `
                     <div class="absolute top-2 right-2 flex space-x-1 z-10">
-                        ${pinButton}
+                        <button onclick="event.stopPropagation(); togglePinGame('${game.id}', ${isPinned});" class="bg-purple-700/80 hover:bg-purple-600 text-white p-1 rounded-full text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${isPinned ? 'text-yellow-400 fill-current' : 'text-white'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M15 3l-3-3l-3 3"/><path d="M12 22v-6"/><path d="M15 21l-3 3l-3-3"/><path d="M22 12h-6"/><path d="M21 15l3-3l-3-3"/><path d="M2 12h6"/><path d="M3 15l-3-3l3-3"/></svg>
+                        </button>
+                        <button onclick="event.stopPropagation(); editGame('${game.id}');" class="bg-yellow-700/80 hover:bg-yellow-600 text-white p-1 rounded-full text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+                        </button>
                     </div>
                     <div class="absolute bottom-2 left-2 z-10">
-                         ${deleteButton}
-                    </div>
-                `;
+                         <button onclick="event.stopPropagation(); deleteGame('${game.id}', '${game.name}');" class="bg-red-700/80 hover:bg-red-600 text-white p-1 rounded-full text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>`;
             }
 
             card.onclick = () => playGame(game);
-            
             card.innerHTML = `
                 <div class="h-40 overflow-hidden relative">
                     ${progressBadge}
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
-                    <img src="${game.coverUrl}" 
-                         alt="Cover for ${game.name}" 
-                         class="w-full h-full object-cover transition duration-300 ease-in-out"
-                         onerror="this.onerror=null;this.src='https://placehold.co/400x300/3b82f6/ffffff?text=NO+COVER+IMAGE';" />
+                    <img src="${game.coverUrl}" alt="${game.name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x300/3b82f6/ffffff?text=NO+COVER';"/>
                 </div>
                 ${adminControls}
                 <div class="p-4">
@@ -714,152 +1634,67 @@
                         <span>Shared by: <span class="text-blue-300 font-mono">${game.userId.substring(0, 8)}...</span></span>
                         ${isExternalLaunch ? '<span class="text-xs font-bold text-yellow-300 ml-2">(External)</span>' : ''}
                     </p>
-                    <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-lg text-sm font-medium transition duration-150">
-                        ${buttonText}
-                    </button>
-                </div>
-            `;
+                    <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-lg text-sm font-medium transition duration-150">${buttonText}</button>
+                </div>`;
             return card;
         };
         
         const renderPinnedGames = () => {
-            const pinnedGamesGrid = document.getElementById('pinnedGamesGrid');
-            const pinnedGamesSection = document.getElementById('pinnedGamesSection');
-            
-            // Filter pinned games and sort them by newest first
-            const pinnedGames = allGames
-                .filter(game => game.isPinned)
-                .sort((a, b) => b.timestamp - a.timestamp); 
-
-            if (pinnedGames.length === 0) {
-                pinnedGamesSection.classList.add('hidden');
-                return;
-            }
-
-            pinnedGamesSection.classList.remove('hidden');
-            pinnedGamesGrid.innerHTML = '';
-            
-            const showControls = isAuthorizedUploader;
-            
-            pinnedGames.forEach(game => {
-                const hasProgress = userProgress.hasOwnProperty(game.id);
-                pinnedGamesGrid.appendChild(createGameCard(game, hasProgress, showControls));
-            });
+            const grid = document.getElementById('pinnedGamesGrid');
+            const section = document.getElementById('pinnedGamesSection');
+            const pinned = allGames.filter(g => g.isPinned).sort((a, b) => b.timestamp - a.timestamp); 
+            if (pinned.length === 0) { section.classList.add('hidden'); return; }
+            section.classList.remove('hidden');
+            grid.innerHTML = '';
+            pinned.forEach(game => grid.appendChild(createGameCard(game, userProgress.hasOwnProperty(game.id), isAuthorizedUploader)));
         };
 
-
         const renderGames = (games) => {
-            renderPinnedGames(); // Render pinned games first
-            
-            // Filter out pinned games from the main grid
-            const unpinnedGames = games.filter(game => !game.isPinned);
-
+            renderPinnedGames();
+            const unpinned = games.filter(g => !g.isPinned);
             gamesGrid.innerHTML = '';
             loadingMessage.style.display = 'none';
-            
-            // Determine if the delete/pin button should be shown
-            const showControls = isAuthorizedUploader;
-
-            if (unpinnedGames.length === 0) {
-                const message = currentSearchTerm ? 
-                    `No games found matching "${currentSearchTerm}".` : 
-                    'No unpinned games available.';
-                gamesGrid.innerHTML = `<p class="col-span-full text-center text-slate-500 mt-10">${message}</p>`;
+            if (unpinned.length === 0) {
+                const msg = currentSearchTerm ? `No matches for "${currentSearchTerm}"` : 'No games yet.';
+                gamesGrid.innerHTML = `<p class="col-span-full text-center text-slate-500 mt-10">${msg}</p>`;
                 return;
             }
-
-            unpinnedGames.forEach(game => {
-                const hasProgress = userProgress.hasOwnProperty(game.id);
-                gamesGrid.appendChild(createGameCard(game, hasProgress, showControls));
-            });
+            unpinned.forEach(game => gamesGrid.appendChild(createGameCard(game, userProgress.hasOwnProperty(game.id), isAuthorizedUploader)));
         };
 
         const renderSavedGames = () => {
-            const savedGames = allGames.filter(game => userProgress.hasOwnProperty(game.id));
-            
-            if (savedGames.length === 0) {
-                savedGamesSection.classList.add('hidden');
-                return;
-            }
-
+            const saved = allGames.filter(g => userProgress.hasOwnProperty(g.id));
+            if (saved.length === 0) { savedGamesSection.classList.add('hidden'); return; }
             savedGamesSection.classList.remove('hidden');
             savedGamesGrid.innerHTML = '';
-            
-            const showControls = isAuthorizedUploader;
-            
-            savedGames.forEach(game => {
-                savedGamesGrid.appendChild(createGameCard(game, true, showControls));
-            });
+            saved.forEach(g => savedGamesGrid.appendChild(createGameCard(g, true, isAuthorizedUploader)));
         };
 
-        const renderLastPlayed = (lastPlayedData) => {
-            const lastPlayedSection = document.getElementById('lastPlayedSection');
-            const lastPlayedCard = document.getElementById('lastPlayedCard');
-            
-            if (!lastPlayedData || !lastPlayedData.gameId) {
-                lastPlayedSection.classList.add('hidden');
-                return;
-            }
-            
-            const game = allGames.find(g => g.id === lastPlayedData.gameId);
-            if (!game) {
-                lastPlayedSection.classList.add('hidden');
-                return;
-            }
-            
-            const showControls = isAuthorizedUploader;
-            
-            lastPlayedSection.classList.remove('hidden');
-            lastPlayedCard.innerHTML = '';
-            const hasProgress = userProgress.hasOwnProperty(game.id);
-            lastPlayedCard.appendChild(createGameCard(game, hasProgress, showControls));
+        const renderLastPlayed = (data) => {
+            const section = document.getElementById('lastPlayedSection');
+            if (!data || !allGames.find(g => g.id === data.gameId)) { section.classList.add('hidden'); return; }
+            section.classList.remove('hidden');
+            document.getElementById('lastPlayedCard').innerHTML = '';
+            document.getElementById('lastPlayedCard').appendChild(createGameCard(allGames.find(g => g.id === data.gameId), true, isAuthorizedUploader));
         };
 
-        // Search and Sort Functions
-        window.handleSearch = (event) => {
-            currentSearchTerm = event.target.value.toLowerCase();
-            renderGames(getFilteredAndSortedGames());
-        };
-
-        window.handleSort = (event) => {
-            currentSortOrder = event.target.value;
-            renderGames(getFilteredAndSortedGames());
-        };
-
+        window.handleSearch = (e) => { currentSearchTerm = e.target.value.toLowerCase(); renderGames(getFilteredAndSortedGames()); };
+        window.handleSort = (e) => { currentSortOrder = e.target.value; renderGames(getFilteredAndSortedGames()); };
         window.getFilteredAndSortedGames = () => {
-            let filtered = allGames;
-            
-            if (currentSearchTerm) {
-                filtered = allGames.filter(game => 
-                    game.name.toLowerCase().includes(currentSearchTerm)
-                );
-            }
-            
-            switch (currentSortOrder) {
-                case 'newest':
-                    return [...filtered].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                case 'oldest':
-                    return [...filtered].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                case 'az':
-                    return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
-                case 'za':
-                    return [...filtered].sort((a, b) => b.name.localeCompare(a.name));
-                default:
-                    return filtered;
-            }
+            let filtered = currentSearchTerm ? allGames.filter(g => g.name.toLowerCase().includes(currentSearchTerm)) : allGames;
+            if (currentSortOrder === 'newest') return [...filtered].sort((a, b) => b.timestamp - a.timestamp);
+            if (currentSortOrder === 'oldest') return [...filtered].sort((a, b) => a.timestamp - b.timestamp);
+            if (currentSortOrder === 'az') return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+            return [...filtered].sort((a, b) => b.name.localeCompare(a.name));
         };
         
-        /**
-         * Toggles visibility and required attributes for HTML/URL launch fields.
-         * @param {string} type 'html' or 'url'
-         */
         window.toggleLaunchFields = (type) => {
             if (type === 'url') {
                 launchUrlGroup.classList.remove('hidden');
                 htmlCodeGroup.classList.add('hidden');
                 htmlCodeInput.removeAttribute('required');
                 launchUrlInput.setAttribute('required', 'required');
-            } else { // html
+            } else {
                 launchUrlGroup.classList.add('hidden');
                 htmlCodeGroup.classList.remove('hidden');
                 htmlCodeInput.setAttribute('required', 'required');
@@ -867,244 +1702,102 @@
             }
         };
 
-        // Modal & Game Player Functions
         window.showUploadModal = (show) => {
             if (show) {
                 uploadModal.style.display = 'flex';
-                // Ensure default state is 'html' when opening
                 document.querySelector('input[name="launchType"][value="html"]').checked = true;
                 toggleLaunchFields('html'); 
             } else {
                 uploadModal.style.display = 'none';
                 uploadedImageUrl = null;
-                if (coverImageFileInput) {
-                    coverImageFileInput.value = '';
-                }
-                if (uploadError) {
-                    uploadError.classList.add('hidden');
-                }
+                coverImageFileInput.value = '';
+                uploadError.classList.add('hidden');
                 uploadForm.reset();
             }
         };
         
         window.playGame = (game) => {
-            // Check for external launch
             if (game.launchType === 'url' && game.launchUrl) {
-                // Save last played, then redirect
                 saveLastPlayed(game.id);
-                // Open in a new tab/window
                 window.open(game.launchUrl, '_blank');
                 return;
             }
-
-            // If internal HTML launch:
-            const gameId = game.id;
-            const title = game.name;
-            const htmlCode = game.htmlCode;
-            
-            // Save last played game
-            saveLastPlayed(gameId);
-            
-            // Inject the GameProgress API into the game's context
+            saveLastPlayed(game.id);
             const enhancedHtmlCode = `
                 <script>
-                  // Game Progress Saving API
-                  const GAME_ID = "${gameId}";
-                  const GAME_TITLE = "${title}";
-                  
-                  // Save progress function
-                  window.saveGameProgress = function(data) {
-                    window.parent.postMessage({ 
-                      type: 'SAVE_PROGRESS', 
-                      gameId: GAME_ID, 
-                      data: data 
-                    }, '*');
-                    return true;
+                  const GAME_ID = "${game.id}";
+                  window.saveGameProgress = function(data) { window.parent.postMessage({ type: 'SAVE_PROGRESS', gameId: GAME_ID, data: data }, '*'); return true; };
+                  window.loadGameProgress = function(cb) { 
+                    const l = (e) => { if (e.data.type === 'LOADED_PROGRESS' && e.data.gameId === GAME_ID) { window.removeEventListener('message', l); cb(e.data.data); } };
+                    window.addEventListener('message', l);
+                    window.parent.postMessage({ type: 'LOAD_PROGRESS', gameId: GAME_ID }, '*');
                   };
-                  
-                  // Load progress function
-                  window.loadGameProgress = function(callback) {
-                    const listener = function(event) {
-                      if (event.data.type === 'LOADED_PROGRESS' && event.data.gameId === GAME_ID) {
-                        window.removeEventListener('message', listener);
-                        callback(event.data.data || null);
-                      }
-                    };
-                    window.addEventListener('message', listener);
-                    window.parent.postMessage({ 
-                      type: 'LOAD_PROGRESS', 
-                      gameId: GAME_ID 
-                    }, '*');
-                  };
-                  
-                  // Notify parent that game is ready
-                  window.parent.postMessage({ 
-                    type: 'GAME_LOADED', 
-                    gameId: GAME_ID 
-                  }, '*');
-                  
-                  // Auto-save on page unload
-                  window.addEventListener('beforeunload', () => {
-                    if (window.onAutoSave) {
-                      window.onAutoSave();
-                    }
-                  });
+                  window.parent.postMessage({ type: 'GAME_LOADED', gameId: GAME_ID }, '*');
                 <\/script>
-                ${htmlCode}
-                <script>
-                  // Log that API is ready
-                  console.log('Game Progress API ready. Use saveGameProgress(data) and loadGameProgress(callback)');
-                <\/script>
-            `;
+                ${game.htmlCode}`;
             
-            document.getElementById('playerGameTitle').textContent = `Playing: ${title}`;
+            document.getElementById('playerGameTitle').textContent = `Playing: ${game.name}`;
             gamePlayerFrame.srcdoc = enhancedHtmlCode;
             playerModal.style.display = 'flex';
         };
 
         window.hidePlayerModal = () => {
-            gamePlayerFrame.srcdoc = '<html><body style="background:#0f172a; color:white; display:flex; justify-content:center; align-items:center; height:100%;">Game closed. Press close to exit.</body></html>';
+            gamePlayerFrame.srcdoc = '';
             playerModal.style.display = 'none';
         };
 
         window.toggleFullscreen = () => {
             const iframe = document.getElementById('gamePlayerFrame');
-            
-            if (!document.fullscreenElement) {
-                iframe.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
-                    alertMessage('Fullscreen not supported or failed to enter fullscreen.', 'red');
-                });
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) iframe.requestFullscreen();
+            else document.exitFullscreen();
         };
 
         document.addEventListener('fullscreenchange', () => {
-            const button = document.getElementById('fullscreenButton');
+            const btn = document.getElementById('fullscreenButton');
             if (document.fullscreenElement) {
-                button.textContent = 'Exit Fullscreen';
-                button.classList.remove('bg-green-600', 'hover:bg-green-700');
-                button.classList.add('bg-orange-600', 'hover:bg-orange-700');
+                btn.textContent = 'Exit';
+                btn.classList.replace('bg-green-600', 'bg-orange-600');
             } else {
-                button.textContent = 'Fullscreen';
-                button.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-                button.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.textContent = 'Fullscreen';
+                btn.classList.replace('bg-orange-600', 'bg-green-600');
             }
         });
 
-        // Listen for messages from the game iframe
         window.addEventListener('message', async (event) => {
-            // Accept messages from same origin or sandboxed iframes (origin 'null')
-            if (event.origin !== window.location.origin && event.origin !== 'null') {
-                return;
-            }
-
-            const { type, gameId, data, gameName } = event.data;
-            
+            if (event.origin !== window.location.origin && event.origin !== 'null') return;
+            const { type, gameId, data } = event.data;
             if (type === 'SAVE_PROGRESS') {
-                await saveGameProgress(gameId, data);
+                if (await saveGameProgress(gameId, data)) alertMessage("Saved!", "green");
             } else if (type === 'LOAD_PROGRESS') {
                 const progress = await loadGameProgress(gameId);
-                // Send progress back to the specific iframe
-                gamePlayerFrame.contentWindow.postMessage({ 
-                  type: 'LOADED_PROGRESS', 
-                  gameId: gameId, 
-                  data: progress 
-                }, '*');
-            } else if (type === 'GAME_LOADED') {
-                console.log(`Game ${gameId} loaded and ready`);
+                gamePlayerFrame.contentWindow.postMessage({ type: 'LOADED_PROGRESS', gameId, data: progress }, '*');
             }
         });
 
-        // Image Upload Handler (Converts to Data URL)
-        window.handleImageUpload = async (event) => {
+        window.handleImageUpload = (event) => {
             const file = event.target.files[0];
-            if (!file) {
-                uploadedImageUrl = null;
-                uploadError.classList.add('hidden');
-                return;
-            }
-
-            // Validate file size and type
-            if (file.size > 716800) {
-                uploadError.textContent = `File too large: ${(file.size / 1024).toFixed(2)}KB. Maximum: 700KB.`;
-                uploadError.classList.remove('hidden');
-                uploadedImageUrl = null;
-                coverImageFileInput.value = '';
-                return;
-            }
-
-            if (!file.type.startsWith('image/')) {
-                uploadError.textContent = 'Invalid file type. Please select an image file.';
-                uploadError.classList.remove('hidden');
-                uploadedImageUrl = null;
-                coverImageFileInput.value = '';
-                return;
-            }
-
-            uploadError.classList.add('hidden');
-            
-            // Show processing state
-            submitGameButton.disabled = true;
-            submitText.textContent = 'Processing Image...';
-            submitSpinner.classList.remove('hidden');
-
+            if (!file) return;
+            if (file.size > 716800) { uploadError.textContent = "File too large."; uploadError.classList.remove('hidden'); return; }
             const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                uploadedImageUrl = e.target.result; // Data URL
-                alertMessage('Image processed successfully!', 'green');
-                submitGameButton.disabled = false;
-                submitText.textContent = 'Share to Home';
-                submitSpinner.classList.add('hidden');
-            };
-            
-            reader.onerror = () => {
-                console.error('Error reading image file:', reader.error);
-                uploadError.textContent = 'Failed to process image. Please try again.';
-                uploadError.classList.remove('hidden');
-                uploadedImageUrl = null;
-                coverImageFileInput.value = '';
-                submitGameButton.disabled = false;
-                submitText.textContent = 'Share to Home';
-                submitSpinner.classList.add('hidden');
-            };
-            
+            reader.onload = (e) => { uploadedImageUrl = e.target.result; alertMessage("Image ready.", "green"); };
             reader.readAsDataURL(file);
         };
 
-        // Event Listeners
         coverImageFileInput.addEventListener('change', handleImageUpload);
         searchInput.addEventListener('input', handleSearch);
         sortSelect.addEventListener('change', handleSort);
 
-        // Custom Alert Box
         function alertMessage(message, type) {
-            const colorMap = {
-                'red': 'bg-red-500',
-                'green': 'bg-green-500',
-                'purple': 'bg-purple-500',
-                'blue': 'bg-blue-500'
-            };
-            
+            const colorMap = { 'red': 'bg-red-500', 'green': 'bg-green-500', 'purple': 'bg-purple-500', 'blue': 'bg-blue-500', 'yellow': 'bg-yellow-500', 'orange': 'bg-orange-500', 'cyan': 'bg-cyan-500' };
             const alertBox = document.createElement('div');
-            alertBox.className = `${colorMap[type]} text-white p-3 rounded-lg shadow-xl fixed top-4 right-4 z-[100] transition-opacity duration-300 opacity-0`;
+            alertBox.className = `${colorMap[type] || 'bg-blue-500'} text-white p-3 rounded-lg shadow-xl fixed top-4 right-4 z-[100] transition-opacity duration-300 opacity-0`;
             alertBox.textContent = message;
-
             document.body.appendChild(alertBox);
-            
             setTimeout(() => alertBox.style.opacity = '1', 10);
-
-            setTimeout(() => {
-                alertBox.style.opacity = '0';
-                setTimeout(() => alertBox.remove(), 300);
-            }, 3000);
+            setTimeout(() => { alertBox.style.opacity = '0'; setTimeout(() => alertBox.remove(), 300); }, 3000);
         }
         
-        // Initialize Application
         window.onload = initFirebase;
-
     </script>
 </body>
 </html>
